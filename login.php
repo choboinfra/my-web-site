@@ -1,5 +1,5 @@
 <?php
-require_once '/var/lib/site-live/members_lib.php';
+require_once __DIR__ . '/lib/members_lib.php';
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!site_valid_csrf()) {

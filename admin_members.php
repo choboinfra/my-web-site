@@ -1,5 +1,5 @@
 <?php
-require_once '/var/lib/site-live/members_lib.php';
+require_once __DIR__ . '/lib/members_lib.php';
 
 if (empty($_SESSION['admin_logged_in'])) {
     http_response_code(403);

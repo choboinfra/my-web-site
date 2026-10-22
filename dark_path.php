@@ -8,7 +8,7 @@ $data_file = __DIR__ . '/dark_path_data.txt';
 $upload_dir = __DIR__ . '/uploads/';
 $upload_url = 'uploads/';
 require_once '/var/lib/site-live/dark_path_secrets.php';
-require_once '/var/lib/site-live/members_lib.php';
+require_once __DIR__ . '/lib/members_lib.php';
 
 if (!is_dir($upload_dir)) {
     mkdir($upload_dir, 0775, true);

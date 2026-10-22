@@ -1,5 +1,5 @@
 <?php
-require_once '/var/lib/site-live/members_lib.php';
+require_once __DIR__ . '/lib/members_lib.php';
 
 $target = (string)($_GET['__target'] ?? 'index.php');
 unset($_GET['__target']);
