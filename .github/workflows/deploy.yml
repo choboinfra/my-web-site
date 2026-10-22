@@ -20,7 +20,7 @@ jobs:
           REMOTE_USER: webadmin
           TARGET: /var/www/html
           ARGS: "-rlrtv --no-g"  # 소유권 변경(chgrp) 미시도 옵션 추가
-          EXCLUDE: "/.git/, /board_uploads/, /uploads/, /backup_*/, /entry_gate_backup_*/"
+          EXCLUDE: "/.git/, /board_uploads/, /uploads/, /dark_path_data.txt, /backup_*/, /entry_gate_backup_*/"
 
   deploy-vm2:
     name: Deploy to VM2
@@ -37,4 +37,4 @@ jobs:
           REMOTE_USER: webadmin
           TARGET: /var/www/html
           ARGS: "-rlrtv --no-g"  # 소유권 변경(chgrp) 미시도 옵션 추가
-          EXCLUDE: "/.git/, /board_uploads/, /uploads/, /backup_*/, /entry_gate_backup_*/"
+          EXCLUDE: "/.git/, /board_uploads/, /uploads/, /dark_path_data.txt, /backup_*/, /entry_gate_backup_*/"

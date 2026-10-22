@@ -4,7 +4,8 @@ ini_set('display_errors', '0');
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
-$data_file = __DIR__ . '/dark_path_data.txt';
+$data_file = '/var/lib/site-live/dark_path_data.txt';
+$lock_file = '/var/lib/site-live/dark_path.lock';
 $upload_dir = __DIR__ . '/uploads/';
 $upload_url = 'uploads/';
 require_once '/var/lib/site-live/dark_path_secrets.php';
@@ -40,6 +41,27 @@ function save_entries($file, $entries) {
     }
 
     return file_put_contents($file, $json, LOCK_EX) !== false;
+}
+
+function acquire_data_lock($file) {
+    $handle = fopen($file, 'c');
+    if ($handle === false) {
+        return false;
+    }
+
+    if (!flock($handle, LOCK_EX)) {
+        fclose($handle);
+        return false;
+    }
+
+    return $handle;
+}
+
+function release_data_lock($handle) {
+    if (is_resource($handle)) {
+        flock($handle, LOCK_UN);
+        fclose($handle);
+    }
 }
 
 function redirect_self() {
@@ -253,25 +275,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($upload_error !== '') {
                 $notice = $upload_error;
             } else {
-                $entries = load_entries($data_file);
+                $lockHandle = acquire_data_lock($lock_file);
 
-                array_unshift($entries, [
-                    'id' => bin2hex(random_bytes(12)),
-                    'name' => $name,
-                    'is_dark_member' => $darkMemberAllowed,
-                    'member_id' => $darkMemberAllowed ? (string)($darkMember['id'] ?? '') : '',
-                    'password' => $password,
-                    'content' => $content,
-                    'file_url' => $file_url,
-                    'file_name' => $file_name,
-                    'date' => date('Y-m-d H:i:s')
-                ]);
-
-                if (save_entries($data_file, $entries)) {
-                    redirect_self();
+                if ($lockHandle === false) {
+                    $notice = '게시글 저장 잠금을 획득하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+                    error_log('게시물 잠금 획득 실패: ' . $lock_file);
                 } else {
-                    $notice = '게시물 저장에 실패했습니다. 데이터 파일 권한을 확인해 주세요.';
-                    error_log('게시물 JSON 저장 실패: ' . $data_file);
+                    $saved = false;
+
+                    try {
+                        $entries = load_entries($data_file);
+
+                        array_unshift($entries, [
+                            'id' => bin2hex(random_bytes(12)),
+                            'name' => $name,
+                            'is_dark_member' => $darkMemberAllowed,
+                            'member_id' => $darkMemberAllowed ? (string)($darkMember['id'] ?? '') : '',
+                            'password' => $password,
+                            'content' => $content,
+                            'file_url' => $file_url,
+                            'file_name' => $file_name,
+                            'date' => date('Y-m-d H:i:s')
+                        ]);
+
+                        $saved = save_entries($data_file, $entries);
+                    } finally {
+                        release_data_lock($lockHandle);
+                    }
+
+                    if ($saved) {
+                        redirect_self();
+                    } else {
+                        // JSON 저장에 실패하면 이번 요청에서 올린 파일을 정리
+                        if ($file_url !== '' && str_starts_with($file_url, 'uploads/')) {
+                            $uploadedPath = $upload_dir . basename($file_url);
+                            if (is_file($uploadedPath)) {
+                                @unlink($uploadedPath);
+                            }
+                        }
+
+                        $notice = '게시물 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+                        error_log('게시물 JSON 저장 실패: ' . $data_file);
+                    }
                 }
             }
         }
@@ -281,45 +326,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $target_id = (string)($_POST['target_id'] ?? '');
         $delete_password = (string)($_POST['password'] ?? '');
 
-        $entries = load_entries($data_file);
-        $deleted = false;
+        $lockHandle = acquire_data_lock($lock_file);
 
-        foreach ($entries as $index => $entry) {
-            if (
-                isset($entry['id'])
-                && hash_equals((string)$entry['id'], $target_id)
-                && (
-                    hash_equals((string)($entry['password'] ?? ''), $delete_password)
-                    || hash_equals($master_password, $delete_password)
-                )
-            ) {
-                unset($entries[$index]);
-                $deleted = true;
+        if ($lockHandle === false) {
+            $notice = '게시글 삭제 잠금을 획득하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+            error_log('게시물 삭제 잠금 획득 실패: ' . $lock_file);
+        } else {
+            $deleted = false;
+            $saved = false;
+            $deletedEntry = null;
 
-                $url = (string)($entry['file_url'] ?? '');
+            try {
+                $entries = load_entries($data_file);
 
-                // uploads 폴더 안의 파일만 삭제
-                $prefix = 'uploads/';
-                if (str_starts_with($url, $prefix)) {
-                    $basename = basename($url);
-                    $path = $upload_dir . $basename;
-
-                    if (is_file($path)) {
-                        @unlink($path);
+                foreach ($entries as $index => $entry) {
+                    if (
+                        isset($entry['id'])
+                        && hash_equals((string)$entry['id'], $target_id)
+                        && (
+                            hash_equals((string)($entry['password'] ?? ''), $delete_password)
+                            || hash_equals($master_password, $delete_password)
+                        )
+                    ) {
+                        unset($entries[$index]);
+                        $deleted = true;
+                        $deletedEntry = $entry;
+                        break;
                     }
                 }
 
-                break;
+                if ($deleted) {
+                    $saved = save_entries($data_file, $entries);
+                }
+            } finally {
+                release_data_lock($lockHandle);
             }
-        }
 
-        if ($deleted && save_entries($data_file, $entries)) {
-            redirect_self();
-        }
+            if ($deleted && $saved) {
+                // JSON 저장 성공 후에만 공유 첨부 파일 삭제
+                $url = (string)($deletedEntry['file_url'] ?? '');
 
-        $notice = $deleted
-            ? '게시물 삭제 처리 중 저장 오류가 발생했습니다.'
-            : '비밀번호가 틀렸거나 게시물이 없습니다.';
+                if (str_starts_with($url, 'uploads/')) {
+                    $basename = basename($url);
+
+                    // uploads/ 바로 아래의 파일만 대상으로 함
+                    if ($basename !== '' && $url === 'uploads/' . $basename) {
+                        $path = $upload_dir . $basename;
+
+                        if (is_file($path)) {
+                            @unlink($path);
+                        }
+                    }
+                }
+
+                redirect_self();
+            }
+
+            $notice = $deleted
+                ? '게시글은 처리했지만 데이터 저장에 실패했습니다. 첨부 파일은 유지했습니다.'
+                : '비밀번호가 틀렸거나 게시물이 없습니다.';
+        }
     }
 }
 
