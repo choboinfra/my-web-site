@@ -4,7 +4,7 @@ RewriteEngine On
 RewriteRule ^$ - [L]
 
 # 입장 전에도 접근할 수 있어야 하는 페이지
-RewriteRule ^(access_gate\.php|index\.php|index\.html|login\.php|signup\.php|guest\.php|admin_login\.php)$ - [L,NC]
+RewriteRule ^(access_gate\.php|index\.php|index\.html|admin_login\.php)$ - [L,NC]
 
 # 이미지 및 정적 리소스는 정상 제공
 RewriteRule ^(uploads|board_uploads)/ - [L,NC]
