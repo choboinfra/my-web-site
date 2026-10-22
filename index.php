@@ -1,4 +1,9 @@
-<?php echo "<!-- Server: VM1 -->"; ?>
+<?php
+// PATCH_NOTES_V1
+require_once __DIR__ . '/patch_notes_widget.php';
+echo "<!-- Server: VM1 -->";
+?>
+
 <?php
 require_once(__DIR__ . '/lib/members_lib.php');
 $isAdmin = !empty($_SESSION['admin_logged_in']);
@@ -28,9 +33,46 @@ a.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
 .login{background:#2d3944;color:#fff;border:1px solid #52616e}
 .signup{background:#172c32;color:#75d8e5;border:1px solid #247887}
 .foot{font-size:12px;color:#71808b;margin-top:24px}
+
+/* PATCH_NOTES_V1 */
+.pn-layout{display:flex;align-items:flex-start;justify-content:center;gap:24px;
+max-width:1100px;margin:0 auto;width:100%}
+.pn-layout>.container{margin:0;flex:1;min-width:0}
+.pn-layout>.panel{flex:1;min-width:0}
+.pn-side{width:340px;flex-shrink:0;min-width:0}
+.pn-panel{background:#1e2329;color:#eee;border:1px solid #3b4650;
+border-radius:12px;padding:20px;box-shadow:0 6px 22px #0004;text-align:left;
+font-family:system-ui,-apple-system,sans-serif}
+.pn-heading{display:flex;justify-content:space-between;align-items:center;
+gap:8px;padding-bottom:12px;border-bottom:1px solid #46505a}
+.pn-heading strong{font-size:19px}
+.pn-panel a{color:#80d8ff;text-decoration:none}
+.pn-panel a:hover{text-decoration:underline}
+.pn-item{display:flex;flex-direction:column;gap:5px;padding:13px 0;
+border-bottom:1px solid #353e47;overflow-wrap:anywhere}
+.pn-item span{font-weight:600;color:#f0f0f0}
+.pn-item small,.pn-detail small{color:#9da9b4;font-size:12px}
+.pn-detail h3{overflow-wrap:anywhere}
+.pn-body{white-space:normal;overflow-wrap:anywhere;line-height:1.8;
+padding:16px 0;border-bottom:1px solid #46505a}
+.pn-panel input,.pn-panel textarea{width:100%;box-sizing:border-box;
+padding:10px;margin:8px 0;background:#111820;color:#fff;
+border:1px solid #52616e;border-radius:6px;font:inherit}
+.pn-panel button{background:#176a7d;color:#fff;border:0;
+border-radius:6px;padding:10px 14px;cursor:pointer}
+.pn-actions{display:flex;align-items:center;gap:16px;margin-top:15px}
+.pn-actions form{margin:0}
+.pn-error{color:#ff8b8b}
+@media(max-width:800px){
+.pn-layout{flex-direction:column;align-items:stretch;gap:18px}
+.pn-layout>.container,.pn-layout>.panel,.pn-side{width:100%;max-width:100%;
+box-sizing:border-box}
+}
+
 </style>
 </head>
 <body>
+<div class="pn-layout">
 <main class="panel">
 <div class="mark">🌐</div>
 <h1>조승훈과 함께 춤을</h1>
@@ -40,6 +82,8 @@ a.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
 <a class="btn signup" href="/signup.php">💠 회원가입</a>
 <div class="foot">입장 후 사이트의 콘텐츠를 이용할 수 있습니다.</div>
 </main>
+<aside class="pn-side"><?php pn_render(); ?></aside>
+</div>
 </body>
 </html>
 <?php
@@ -103,7 +147,43 @@ a.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
             body { padding: 65px 14px 20px !important; }
         }
 
-    </style>
+    
+/* PATCH_NOTES_V1 */
+.pn-layout{display:flex;align-items:flex-start;justify-content:center;gap:24px;
+max-width:1100px;margin:0 auto;width:100%}
+.pn-layout>.container{margin:0;flex:1;min-width:0}
+.pn-layout>.panel{flex:1;min-width:0}
+.pn-side{width:340px;flex-shrink:0;min-width:0}
+.pn-panel{background:#1e2329;color:#eee;border:1px solid #3b4650;
+border-radius:12px;padding:20px;box-shadow:0 6px 22px #0004;text-align:left;
+font-family:system-ui,-apple-system,sans-serif}
+.pn-heading{display:flex;justify-content:space-between;align-items:center;
+gap:8px;padding-bottom:12px;border-bottom:1px solid #46505a}
+.pn-heading strong{font-size:19px}
+.pn-panel a{color:#80d8ff;text-decoration:none}
+.pn-panel a:hover{text-decoration:underline}
+.pn-item{display:flex;flex-direction:column;gap:5px;padding:13px 0;
+border-bottom:1px solid #353e47;overflow-wrap:anywhere}
+.pn-item span{font-weight:600;color:#f0f0f0}
+.pn-item small,.pn-detail small{color:#9da9b4;font-size:12px}
+.pn-detail h3{overflow-wrap:anywhere}
+.pn-body{white-space:normal;overflow-wrap:anywhere;line-height:1.8;
+padding:16px 0;border-bottom:1px solid #46505a}
+.pn-panel input,.pn-panel textarea{width:100%;box-sizing:border-box;
+padding:10px;margin:8px 0;background:#111820;color:#fff;
+border:1px solid #52616e;border-radius:6px;font:inherit}
+.pn-panel button{background:#176a7d;color:#fff;border:0;
+border-radius:6px;padding:10px 14px;cursor:pointer}
+.pn-actions{display:flex;align-items:center;gap:16px;margin-top:15px}
+.pn-actions form{margin:0}
+.pn-error{color:#ff8b8b}
+@media(max-width:800px){
+.pn-layout{flex-direction:column;align-items:stretch;gap:18px}
+.pn-layout>.container,.pn-layout>.panel,.pn-side{width:100%;max-width:100%;
+box-sizing:border-box}
+}
+
+</style>
 </head>
 <body>
 
@@ -115,7 +195,8 @@ a.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
     </div>
     <?php endif; ?>
 
-    <div class="container">
+    <div class="pn-layout">
+<div class="container">
         <h1>조승훈과 함께 춤을　メインページ</h1>
         <p style="color: #aaa;">테스트 중 입니다 テスト中です</p>
         
@@ -141,6 +222,8 @@ a.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
         <li><a href="board.php" style="display:inline-block;background:#b9e3ff;color:#172b3a;border:1px solid #91cefa;border-radius:8px;padding:9px 16px;font-weight:bold;text-decoration:none;">익명 게시판</a></li>
 </ul>
     </div>
+<aside class="pn-side"><?php pn_render(); ?></aside>
+</div>
 <!-- [우측 상단 빨간색 작은 '어둠의 경로' 링크] -->
 <style>
     .secret-link { 
