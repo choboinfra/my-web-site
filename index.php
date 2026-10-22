@@ -1,5 +1,6 @@
+<?php echo "<!-- Server: VM1 -->"; ?>
 <?php
-require_once '/var/lib/site-live/members_lib.php';
+require_once(__DIR__ . '/lib/members_lib.php');
 $isAdmin = !empty($_SESSION['admin_logged_in']);
 $siteMember = site_current_member();
 if (!$siteMember && empty($_SESSION['guest_mode']) && !$isAdmin) {
@@ -202,4 +203,5 @@ a.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
 </script>
 
 </body>
-</html>
+</html><!-- Server: VM1 -->
+<!-- Server: VM1 -->
