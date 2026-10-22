@@ -30,7 +30,7 @@ function renderAuthorWithDarkAccess($name, $is_admin = false, $member_id = '', $
 }
 
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once '/var/lib/site-live/members_lib.php';
+require_once __DIR__ . '/lib/members_lib.php';
 $currentMember = site_current_member();
 $isMember = is_array($currentMember);
 $config = '/var/lib/site-live/board_config.php';
