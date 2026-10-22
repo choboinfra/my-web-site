@@ -494,7 +494,19 @@ button.submit-btn{background:#d32f2f;color:#fff;font-weight:bold;border:none;pad
 <?php foreach ($entries as $entry): ?>
 <div class="post">
 <div class="post-header">
-<span><?= h($entry['name'] ?? '') ?><?= !empty($entry['is_dark_member']) ? ' 😈' : '' ?></span>
+<span><?php
+$entryMember = null;
+if (!empty($entry['member_id']) && function_exists('site_member_by_id')) {
+    $entryMember = site_member_by_id((string)$entry['member_id']);
+}
+$isAngel = is_array($entryMember)
+    && empty($entryMember['suspended'])
+    && ($entryMember['role'] ?? '') === 'angel';
+if ($isAngel) echo '<span style="color:#fff">🪽 ';
+echo h($entry['name'] ?? '');
+if ($isAngel) echo '</span>';
+echo !empty($entry['is_dark_member']) ? ' 😈' : '';
+?></span>
 <div>
 <span class="post-date"><?= h($entry['date'] ?? '') ?></span>
 

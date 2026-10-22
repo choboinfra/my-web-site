@@ -101,6 +101,7 @@ function site_role_label($role) {
     $labels = [
         'member' => '💠 회원',
         'operator' => '🔷 운영자',
+        'angel' => '🪽 천사',
         'special_guest' => '🍀 특별 게스트'
     ];
     return $labels[$role] ?? '💠 회원';

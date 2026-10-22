@@ -429,9 +429,17 @@ function renderAuthor($name, $isAdmin, $memberId = '', $memberRole = '') {
         echo '<span class="admin-name">👑 관리자</span>';
         return;
     }
+    if ($memberId !== '' && function_exists('site_member_by_id')) {
+        $liveMember = site_member_by_id((string)$memberId);
+        if (is_array($liveMember) && empty($liveMember['suspended'])) {
+            $memberRole = (string)($liveMember['role'] ?? $memberRole);
+        }
+    }
     $name = $name !== '' ? $name : '익명';
     if ($memberId !== '') {
-        if ($memberRole === 'operator') {
+        if ($memberRole === 'angel') {
+            echo '<span style="color:#fff">🪽 ' . e($name) . '</span>';
+        } elseif ($memberRole === 'operator') {
             echo '<span style="color:#60a5fa;font-weight:800">🔷 ' . e($name) . '</span>';
         } elseif ($memberRole === 'special_guest') {
             echo '<span style="color:#facc15;font-weight:800">🍀 ' . e($name) . '</span>';
@@ -697,7 +705,7 @@ $detailImages = array_values(array_unique(array_filter(
 <?php if (($_GET['write'] ?? '') === '1'): ?>
 <section class="panel">
 <h2>글쓰기</h2>
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" id="board-write-form">
 <input type="hidden" name="csrf" value="<?=e($_SESSION['board_csrf'])?>">
 <input type="hidden" name="action" value="write">
 <?php if (!$isAdmin): ?>
@@ -711,11 +719,49 @@ $detailImages = array_values(array_unique(array_filter(
 <label>제목</label>
 <input name="title" maxlength="80" required placeholder="게시글 제목">
 <label>이미지 첨부 (장당 최대 50MB · 최대 10장)</label>
-<input type="file" name="board_images[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="height:auto;min-width:0;display:block;padding:9px;background:#101010;color:#eee;border:1px solid #444;border-radius:5px;width:100%;">
+<input type="file" id="board-images" name="board_images[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="height:auto;min-width:0;display:block;padding:9px;background:#101010;color:#eee;border:1px solid #444;border-radius:5px;width:100%;">
 <label>내용</label>
 <textarea name="content" maxlength="5000" required placeholder="내용을 입력하세요"></textarea>
 <button type="submit">게시글 등록</button>
 <a class="button cancel-button" href="board.php">취소</a>
+<script>
+(() => {
+  const form = document.getElementById('board-write-form');
+  const input = document.getElementById('board-images');
+  if (!form || !input) return;
+
+  const MB = 1024 * 1024;
+  const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+  function checkImages() {
+    const files = Array.from(input.files || []);
+    let error = '';
+
+    if (files.length > 10) {
+      error = '이미지는 최대 10장까지 선택할 수 있습니다.';
+    } else if (files.some(f => f.size > 50 * MB)) {
+      error = '이미지는 장당 최대 50MB까지 업로드할 수 있습니다.';
+    } else if (files.reduce((sum, f) => sum + f.size, 0) > 500 * MB) {
+      error = '이미지 전체 용량은 최대 500MB입니다.';
+    } else if (files.some(f => !allowed.includes(f.type))) {
+      error = 'JPG, PNG, GIF, WebP 이미지만 첨부할 수 있습니다.';
+    }
+
+    if (error) {
+      alert(error + '\n사진을 다시 선택해 주세요.');
+      input.value = '';
+      return false;
+    }
+    return true;
+  }
+
+  input.addEventListener('change', checkImages);
+  form.addEventListener('submit', event => {
+    if (!checkImages()) event.preventDefault();
+  });
+})();
+</script>
+
 </form>
 </section>
 <?php else: ?>

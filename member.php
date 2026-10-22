@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = site_member_data();
             foreach ($data['users'] as &$u) {
                 if (($u['id'] ?? '') !== $member['id']) continue;
-                $free = in_array($u['role'] ?? 'member', ['operator','special_guest'], true)
+                $free = in_array($u['role'] ?? 'member', ['operator','angel','special_guest'], true)
                     || empty($u['last_nickname_change'])
                     || (time() - (int)$u['last_nickname_change'] >= 7 * 86400);
                 if ($free) {
@@ -45,10 +45,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 $remaining = max(0, 7 * 86400 - (time() - (int)($member['last_nickname_change'] ?? 0)));
 $freeNow = empty($member['last_nickname_change']) || $remaining === 0
-    || in_array($member['role'] ?? '', ['operator','special_guest'], true);
+    || in_array($member['role'] ?? '', ['operator','angel','special_guest'], true);
 ?>
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>내 계정</title>
-<style>body{margin:0;padding:24px;background:#121212;color:#eee;font-family:sans-serif}.box{max-width:650px;margin:30px auto;background:#1e1e1e;border:1px solid #333;border-radius:10px;padding:24px}input{box-sizing:border-box;width:100%;padding:12px;margin:7px 0 15px;background:#111;color:#fff;border:1px solid #444;border-radius:5px}button,.btn{display:inline-block;padding:10px 14px;background:#b9e3ff;color:#172b3a;border:0;border-radius:5px;font-weight:bold;text-decoration:none;cursor:pointer}.muted{color:#aaa}.message{color:#a5f3b7}.nick{font-weight:bold}.member{color:#60a5fa}.operator{color:#60a5fa}.special_guest{color:#facc15}</style></head><body><div class="box">
+<style>body{margin:0;padding:24px;background:#121212;color:#eee;font-family:sans-serif}.box{max-width:650px;margin:30px auto;background:#1e1e1e;border:1px solid #333;border-radius:10px;padding:24px}input{box-sizing:border-box;width:100%;padding:12px;margin:7px 0 15px;background:#111;color:#fff;border:1px solid #444;border-radius:5px}button,.btn{display:inline-block;padding:10px 14px;background:#b9e3ff;color:#172b3a;border:0;border-radius:5px;font-weight:bold;text-decoration:none;cursor:pointer}.muted{color:#aaa}.message{color:#a5f3b7}.nick{font-weight:bold}.member{color:#60a5fa}.operator{color:#60a5fa}.special_guest{color:#facc15}.angel{color:#fff}</style></head><body><div class="box">
 <h1>내 계정</h1>
 <p>아이디: <b><?=site_e($member['username'])?></b></p>
 <p>닉네임: <span class="nick <?=site_e($member['role'])?>"><?=site_e(site_role_label($member['role']))?> <?=site_e($member['nickname'])?></span></p>

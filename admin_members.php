@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($action === 'role') {
                     $role = (string)($_POST['role'] ?? '');
-                    if (!in_array($role, ['member', 'operator', 'special_guest'], true)) {
+                    if (!in_array($role, ['member', 'operator', 'angel', 'special_guest'], true)) {
                         throw new RuntimeException('올바르지 않은 등급입니다.');
                     }
 
@@ -144,7 +144,7 @@ button,.btn{display:inline-block;padding:9px 12px;background:#b9e3ff;color:#172b
 button:hover,.btn:hover{filter:brightness(1.1)}
 .danger{background:#b42332;color:white}
 .reset{background:#7653b5;color:white}
-.member{color:#60a5fa}.special_guest{color:#facc15}.operator{color:#60a5fa}
+.member{color:#60a5fa}.special_guest{color:#facc15}.operator{color:#60a5fa}.angel{color:#fff}
 .msg{padding:10px;border-radius:6px;background:#193524;color:#a5f3b7}
 .msg.error{background:#451d22;color:#ffb4b4}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
@@ -182,6 +182,7 @@ hr{border:0;border-top:1px solid #383838;margin:15px 0}
 <select name="role">
 <option value="member" <?=($u['role'] ?? '') === 'member' ? 'selected' : ''?>>💠 일반 회원</option>
 <option value="special_guest" <?=($u['role'] ?? '') === 'special_guest' ? 'selected' : ''?>>🍀 특별 게스트</option>
+<option value="angel" <?=($u['role'] ?? '') === 'angel' ? 'selected' : ''?>>🪽 천사</option>
 <option value="operator" <?=($u['role'] ?? '') === 'operator' ? 'selected' : ''?>>🔷 운영자</option>
 </select>
 <button type="submit">등급 변경</button>
