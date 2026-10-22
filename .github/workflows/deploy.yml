@@ -9,30 +9,32 @@ jobs:
     name: Deploy to VM1
     runs-on: ubuntu-latest
     steps:
-      - name: GitHub 소스 코드 가져오기
+      - name: GitHub 소스 다운로드
         uses: actions/checkout@v4
 
-      - name: VM1에 웹 소스 전체 전송 (rsync)
+      - name: VM1에 소스 동기화
         uses: easingthemes/ssh-deploy@main
         with:
           SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
           REMOTE_HOST: 129.225.143.163
           REMOTE_USER: webadmin
           TARGET: /var/www/html
-          EXCLUDE: "/.git/, /board_uploads/, /uploads/"
+          ARGS: "-rlrtv --no-g"  # 소유권 변경(chgrp) 미시도 옵션 추가
+          EXCLUDE: "/.git/, /board_uploads/, /uploads/, /backup_*/, /entry_gate_backup_*/"
 
   deploy-vm2:
     name: Deploy to VM2
     runs-on: ubuntu-latest
     steps:
-      - name: GitHub 소스 코드 가져오기
+      - name: GitHub 소스 다운로드
         uses: actions/checkout@v4
 
-      - name: VM2에 웹 소스 전체 전송 (rsync)
+      - name: VM2에 소스 동기화
         uses: easingthemes/ssh-deploy@main
         with:
           SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
           REMOTE_HOST: 129.225.156.63
           REMOTE_USER: webadmin
           TARGET: /var/www/html
-          EXCLUDE: "/.git/, /board_uploads/, /uploads/"
+          ARGS: "-rlrtv --no-g"  # 소유권 변경(chgrp) 미시도 옵션 추가
+          EXCLUDE: "/.git/, /board_uploads/, /uploads/, /backup_*/, /entry_gate_backup_*/"
