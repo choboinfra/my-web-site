@@ -61,6 +61,10 @@ $siteManagedPages = [
     'dark_path.php' => '어둠의 경로',
     'filemanager.php' => '파일 관리자',
     'upload.php' => '파일 업로드',
+    'guest.php' => '게스트 입장',
+    'login.php' => '회원 로그인',
+    'signup.php' => '회원가입',
+
 ];
 
 $siteIsAdmin = !empty($_SESSION['admin_logged_in']);
