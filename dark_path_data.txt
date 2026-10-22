@@ -1,0 +1,56 @@
+[
+    {
+        "id": "1a70bd0fff4213b28bc9d027",
+        "name": "그는일베인가",
+        "password": "0389",
+        "content": "",
+        "file_url": "uploads\/17677dd990ba56e19a79460d11aa18fb.jpg",
+        "file_name": "1482196121811.jpg",
+        "date": "2026-10-21 01:15:03"
+    },
+    {
+        "id": "8dcc85f9b50142518d9b90cb",
+        "name": "dd",
+        "password": "dd",
+        "content": "dd",
+        "file_url": "uploads\/fc03f17682312a78d3701d4989bffefc.jpg",
+        "file_name": "Gemini_Generated_Image_4swgkf4swgkf4swg.jpg",
+        "date": "2026-10-20 14:30:04"
+    },
+    {
+        "id": "79b22d5b3dfc257492f6afc1",
+        "name": "dd",
+        "password": "dd",
+        "content": "dd",
+        "file_url": "uploads\/e9b306c49ca08d34d2ae01c9da50139d.jpg",
+        "file_name": "Gemini_Generated_Image_9bcswp9bcswp9bcs.jpg",
+        "date": "2026-10-20 14:23:58"
+    },
+    {
+        "id": "6727aa91f5f7fd4793f44470",
+        "name": "ㅇㅇ",
+        "password": "dd",
+        "content": "",
+        "file_url": "uploads\/b3af0297accfb7a71d812cad45a714e1.jpg",
+        "file_name": "singlebungle1472-20261002-181017-000.jpg",
+        "date": "2026-10-20 14:02:14"
+    },
+    {
+        "id": "3dfa764e989c544f5e0383cd",
+        "name": "파일업로드",
+        "password": "0389",
+        "content": "영상테스트",
+        "file_url": "uploads\/5c0c874b8a4dea6fa45671a347076d9a.mp4",
+        "file_name": "alcl.mp4",
+        "date": "2026-10-20 14:01:40"
+    },
+    {
+        "id": "8c9c3d27464aeb789fe89707",
+        "name": "업로드테스트",
+        "password": "0389",
+        "content": "업로드 테스트",
+        "file_url": "uploads\/78365e9b67a5cc2938746952e1dac748.jpg",
+        "file_name": "20161220_093543.jpg",
+        "date": "2026-10-20 13:54:51"
+    }
+]

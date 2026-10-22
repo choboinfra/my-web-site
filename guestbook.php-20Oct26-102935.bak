@@ -1,0 +1,258 @@
+<?php
+$file = 'guestbook_data.txt';
+
+// 데이터 처리 (글 작성, 댓글 작성, 삭제)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    
+    // 1. 새 글 작성
+    if ($action === 'write') {
+        $dev_answer = trim($_POST['dev_answer'] ?? '');
+        
+        // [설정] 개발자 이름 암호: '조승훈' (공백 제거 후 비교)
+        if ($dev_answer !== '조승훈') {
+            echo "<script>alert('개발자 이름 정답이 틀렸습니다! 글을 쓸 수 없습니다.'); history.back();</script>";
+            exit;
+        }
+
+        $name = trim($_POST['name']);
+        $password = trim($_POST['password']);
+        $content = trim($_POST['content']);
+        
+        if (!empty($name) && !empty($password) && !empty($content)) {
+            $entries = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
+            $new_entry = [
+                'id' => time(),
+                'type' => 'post',
+                'name' => htmlspecialchars($name),
+                'password' => $password,
+                'content' => htmlspecialchars($content),
+                'date' => date('Y-m-d H:i:s'),
+                'comments' => []
+            ];
+            array_unshift($entries, $new_entry); // 최신글이 위로
+            file_put_contents($file, json_encode($entries, JSON_UNESCAPED_UNICODE));
+        }
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+    
+    // 2. 댓글 작성
+    if ($action === 'comment') {
+        $post_id = $_POST['post_id'];
+        $c_name = trim($_POST['c_name']);
+        $c_pw = trim($_POST['c_pw']);
+        $c_content = trim($_POST['c_content']);
+        
+        if (!empty($c_name) && !empty($c_pw) && !empty($c_content) && file_exists($file)) {
+            $entries = json_decode(file_get_contents($file), true);
+            foreach ($entries as &$entry) {
+                if ($entry['id'] == $post_id) {
+                    $entry['comments'][] = [
+                        'c_id' => time() . mt_rand(10,99),
+                        'c_name' => htmlspecialchars($c_name),
+                        'c_pw' => $c_pw,
+                        'c_content' => htmlspecialchars($c_content),
+                        'date' => date('Y-m-d H:i:s')
+                    ];
+                    break;
+                }
+            }
+            file_put_contents($file, json_encode($entries, JSON_UNESCAPED_UNICODE));
+        }
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+
+    // 3. 삭제 (글 또는 댓글)
+    if ($action === 'delete') {
+        $target_id = $_POST['target_id'];
+        $del_pw = $_POST['password'];
+        $is_comment = isset($_POST['is_comment']) ? true : false;
+        
+        if (file_exists($file)) {
+            $entries = json_decode(file_get_contents($file), true);
+            if ($is_comment) {
+                // 댓글 삭제
+                foreach ($entries as &$entry) {
+                    foreach ($entry['comments'] as $idx => $comm) {
+                        if ($comm['c_id'] == $target_id && $comm['c_pw'] === $del_pw) {
+                            unset($entry['comments'][$idx]);
+                            $entry['comments'] = array_values($entry['comments']);
+                        }
+                    }
+                }
+            } else {
+                // 게시글 삭제
+                $entries = array_filter($entries, function($entry) use ($target_id, $del_pw) {
+                    if ($entry['id'] == $target_id) {
+                        return $entry['password'] !== $del_pw; // 비번 같으면 제외(삭제)
+                    }
+                    return true;
+                });
+                $entries = array_values($entries);
+            }
+            file_put_contents($file, json_encode($entries, JSON_UNESCAPED_UNICODE));
+        }
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+}
+
+$entries = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
+?>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>방명록</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: #e0e0e0; margin: 0; padding: 20px; }
+        .container { max-width: 750px; margin: 0 auto; background: #1e1e1e; padding: 20px; border: 1px solid #333; border-radius: 6px; }
+        h2 { border-bottom: 2px solid #00acc1; padding-bottom: 10px; color: #fff; }
+        a { color: #80deea; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        
+        /* 작성 폼 토글 버튼 */
+        .write-toggle-btn { background: #00acc1; color: #000; font-weight: bold; border: none; padding: 12px 20px; cursor: pointer; width: 100%; border-radius: 4px; font-size: 16px; margin-bottom: 20px; }
+        .write-toggle-btn:hover { background: #26c6da; }
+        
+        .form-box { display: none; background: #2a2a2a; padding: 15px; border-radius: 4px; border: 1px solid #444; margin-bottom: 20px; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.9em; margin-bottom: 4px; color: #b0b0b0; }
+        input, textarea { width: 100%; padding: 8px; box-sizing: border-box; background: #121212; border: 1px solid #444; color: #fff; border-radius: 3px; }
+        button.submit-btn { background: #00acc1; color: #000; font-weight: bold; border: none; padding: 10px 20px; cursor: pointer; border-radius: 3px; }
+        
+        /* 게시물 스타일 */
+        .post { background: #222; border: 1px solid #333; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+        .post-header { display: flex; justify-content: space-between; font-weight: bold; color: #ffb74d; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px; }
+        .post-date { font-size: 0.8em; color: #888; font-weight: normal; }
+        .post-content { white-space: pre-wrap; margin-bottom: 15px; line-height: 1.4; }
+        
+        /* 삭제 폼 */
+        .del-form { display: inline-block; float: right; }
+        .del-form input { width: 80px; padding: 2px; font-size: 0.8em; display: inline-block; }
+        .del-form button { background: #d32f2f; color: #fff; border: none; padding: 3px 8px; font-size: 0.8em; cursor: pointer; border-radius: 2px; }
+        
+        /* 댓글 영역 */
+        .comments-section { background: #181818; padding: 10px; border-radius: 4px; margin-top: 10px; border-top: 1px dashed #444; }
+        .comment-item { font-size: 0.9em; padding: 6px 0; border-bottom: 1px solid #2a2a2a; display: flex; justify-content: space-between; align-items: center; }
+        .comment-form { display: flex; gap: 5px; margin-top: 10px; }
+        .comment-form input { font-size: 0.85em; padding: 5px; }
+        .comment-form button { background: #444; color: #fff; border: none; padding: 5px 10px; cursor: pointer; font-size: 0.85em; }
+    </style>
+    <script>
+        // 글쓰기 버튼 클릭 시 개발자 이름 암호 묻기
+        function checkDeveloper() {
+            let answer = prompt("개발자 이름은?");
+            if (answer === null) return; // 취소 누름
+            
+            // 정답 체크 ('조승훈')
+            if (answer.trim() === "조승훈") {
+                let box = document.getElementById("writeBox");
+                if (box.style.display === "none" || box.style.display === "") {
+                    box.style.display = "block";
+                } else {
+                    box.style.display = "none";
+                }
+            } else {
+                alert("틀렸습니다! 개발자 이름이 아닙니다.");
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="container">
+    <h2>다크 방명록=</h2>
+    <p><a href="index.php">← 메인으로 돌아가기</a></p>
+    
+    <!-- 방명록 글쓰기 버튼 (클릭 시 암호 팝업) -->
+    <button class="write-toggle-btn" onclick="checkDeveloper()">방명록 글쓰기 (개발자 암호 필요)</button>
+    
+    <!-- 글 작성 폼 (기본 숨김) -->
+    <div id="writeBox" class="form-box">
+        <form method="POST">
+            <input type="hidden" name="action" value="write">
+            <!-- 서버 검증용 정답 전송 -->
+            <input type="hidden" name="dev_answer" value="조승훈"> 
+            
+            <div style="display: flex; gap: 10px;" class="form-group">
+                <div style="flex: 1;">
+                    <label>이름 (닉네임)</label>
+                    <input type="text" name="name" required placeholder="ㅇㅇ">
+                </div>
+                <div style="flex: 1;">
+                    <label>비밀번호 (삭제용)</label>
+                    <input type="password" name="password" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>내용</label>
+                <textarea name="content" rows="4" required placeholder="내용을 입력하세요"></textarea>
+            </div>
+            <button type="submit" class="submit-btn">등록하기</button>
+        </form>
+    </div>
+
+    <!-- 글 목록 -->
+    <div class="post-list">
+        <?php if (empty($entries)): ?>
+            <p style="text-align: center; color: #777; padding: 20px;">아직 작성된 방명록이 없습니다.</p>
+        <?php else: ?>
+            <?php foreach ($entries as $entry): ?>
+                <div class="post">
+                    <div class="post-header">
+                        <span><?= $entry['name'] ?></span>
+                        <div>
+                            <span class="post-date"><?= $entry['date'] ?></span>
+                            <!-- 글 삭제 폼 -->
+                            <form method="POST" class="del-form" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="target_id" value="<?= $entry['id'] ?>">
+                                <input type="password" name="password" placeholder="비번" required>
+                                <button type="submit">삭제</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="post-content"><?= $entry['content'] ?></div>
+                    
+                    <!-- 댓글 영역 -->
+                    <div class="comments-section">
+                        <div style="font-size: 0.85em; font-weight: bold; color: #aaa; margin-bottom: 5px;">댓글</div>
+                        <?php if (!empty($entry['comments'])): ?>
+                            <?php foreach ($entry['comments'] as $comm): ?>
+                                <div class="comment-item">
+                                    <div>
+                                        <strong style="color: #90caf9;"><?= $comm['c_name'] ?></strong>: <?= $comm['c_content'] ?> 
+                                        <span style="font-size: 0.75em; color: #666;">(<?= $comm['date'] ?>)</span>
+                                    </div>
+                                    <!-- 댓글 삭제 폼 -->
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('댓글을 삭제하시겠습니까?');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="target_id" value="<?= $comm['c_id'] ?>">
+                                        <input type="hidden" name="is_comment" value="1">
+                                        <input type="password" name="password" placeholder="비번" style="width: 50px; font-size: 0.75em; background:#121212; color:#fff; border:1px solid #444;" required>
+                                        <button type="submit" style="background:#b71c1c; color:#fff; border:none; padding:2px 5px; font-size:0.75em; cursor:pointer;">삭제</button>
+                                    </form>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                        
+                        <!-- 댓글 작성 폼 -->
+                        <form method="POST" class="comment-form">
+                            <input type="hidden" name="action" value="comment">
+                            <input type="hidden" name="post_id" value="<?= $entry['id'] ?>">
+                            <input type="text" name="c_name" placeholder="닉네임" style="width: 20%;" required>
+                            <input type="password" name="c_pw" placeholder="비번" style="width: 20%;" required>
+                            <input type="text" name="c_content" placeholder="댓글을 입력하세요" style="width: 50%;" required>
+                            <button type="submit">등록</button>
+                        </form>
+                    </div>
+
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+</div>
+</body>
+</html>

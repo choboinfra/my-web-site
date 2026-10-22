@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>조승훈과 함께 춤을 メインページ</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: #e0e0e0; margin: 0; padding: 40px; }
+        .container { max-width: 600px; margin: 0 auto; background: #1e1e1e; padding: 30px; border-radius: 8px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        h1 { color: #fff; border-bottom: 2px solid #00acc1; padding-bottom: 10px; margin-top: 0; }
+        .menu-list { list-style: none; padding: 0; }
+        .menu-list li { margin: 15px 0; }
+        .menu-list a { display: block; padding: 14px 20px; background: #2d2d2d; color: #fff; text-decoration: none; border-radius: 4px; transition: 0.2s; border: 1px solid #444; font-size: 16px; }
+        .menu-list a:hover { background: #00acc1; color: #000; font-weight: bold; }
+        .admin-btn { background: #b71c1c !important; border-color: #d32f2f !important; }
+        .admin-btn:hover { background: #e53935 !important; color: #fff !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>조승훈과 함께 춤을　メインページ</h1>
+        <p style="color: #aaa;">테스트 중 입니다 テスト中です</p>
+        
+        <ul class="menu-list">
+            <li><a href="lunch.html">오늘의 점심 메뉴 추천 ランダムメニュー</a></li>
+            <li><a href="starwars.html">스타크래프트 턴 게임　ゲーム</a></li>
+            <li><a href="guestbook.php">방명록　コメント</a></li>
+            <li><a href="chat.php">실시간 채팅 / 접속자 현황판 ライブチャット</a></li>
+            <!-- 관리자 인증 페이지로 연결되는 버튼 -->
+            <li><a href="admin_login.php" class="admin-btn">🛠️ 관리자 페이지　管理者専用 </a></li>
+        </ul>
+    </div>
+<!-- [우측 상단 빨간색 작은 '어둠의 경로' 링크] -->
+<style>
+    .secret-link { 
+        position: fixed; 
+        top: 15px; 
+        right: 20px; 
+        font-size: 11px; 
+        color: #b71c1c; /* 은은하고 어두운 다크 레드 */
+        text-decoration: none; 
+        z-index: 9999; 
+        transition: 0.3s; 
+    }
+    .secret-link:hover { color: #ff5252; /* 마우스 올리면 밝은 빨간색으로 */ }
+</style>
+<a href="dark_path.php" class="secret-link">어둠의 경로</a>
+
+<script>
+(function () {
+    async function heartbeat() {
+        try {
+            await fetch('presence.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+                body: new URLSearchParams({
+                    action: 'heartbeat',
+                    page: location.pathname.split('/').pop() || 'index.html'
+                }),
+                cache: 'no-store',
+                credentials: 'same-origin'
+            });
+        } catch (e) {}
+    }
+    heartbeat();
+    setInterval(heartbeat, 10000);
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+RewriteEngine On
+
+# 루트는 기존 DirectoryIndex를 사용
+RewriteRule ^$ - [L]
+
+# 입장 전에도 접근할 수 있어야 하는 페이지
+RewriteRule ^(access_gate\.php|index\.php|index\.html|login\.php|signup\.php|guest\.php|admin_login\.php)$ - [L,NC]
+
+# 이미지 및 정적 리소스는 정상 제공
+RewriteRule ^(uploads|board_uploads)/ - [L,NC]
+RewriteRule \.(css|js|png|jpe?g|gif|webp|ico|svg|woff2?|ttf|map)$ - [L,NC]
+
+# 그 외 페이지는 서버에서 입장 여부 확인
+RewriteRule ^(.*)$ access_gate.php?__target=$1 [QSA,L]

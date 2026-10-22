@@ -1,0 +1,248 @@
+<?php
+session_start();
+
+$config = '/var/lib/site-live/board_config.php';
+$dataFile = '/var/lib/site-live/board_posts.json';
+$lockFile = '/var/lib/site-live/board_posts.lock';
+
+if (!is_readable($config)) {
+    http_response_code(500);
+    exit('게시판 설정 파일을 읽을 수 없습니다. 관리자에게 문의하세요.');
+}
+require $config;
+
+function e($v) {
+    return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+function charCount($s) {
+    return preg_match_all('/./us', $s, $m);
+}
+function loadPosts($file) {
+    if (!is_file($file)) return [];
+    $data = json_decode(file_get_contents($file), true);
+    return is_array($data) ? $data : [];
+}
+function savePosts($file, $posts) {
+    $json = json_encode(array_values($posts), JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    if ($json === false || file_put_contents($file, $json, LOCK_EX) === false) {
+        throw new RuntimeException('저장에 실패했습니다.');
+    }
+}
+function csrfCheck() {
+    return isset($_POST['csrf'], $_SESSION['board_csrf'])
+        && hash_equals($_SESSION['board_csrf'], (string)$_POST['csrf']);
+}
+
+if (empty($_SESSION['board_csrf'])) {
+    $_SESSION['board_csrf'] = bin2hex(random_bytes(32));
+}
+$message = '';
+$action = $_POST['action'] ?? '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrfCheck()) {
+        $message = '요청이 만료되었습니다. 새로고침 후 다시 시도해 주세요.';
+    } else {
+        try {
+            $lock = fopen($lockFile, 'c');
+            if (!$lock) throw new RuntimeException('게시판 잠금 파일을 열 수 없습니다.');
+            flock($lock, LOCK_EX);
+            $posts = loadPosts($dataFile);
+
+            if ($action === 'write') {
+                $name = trim((string)($_POST['name'] ?? ''));
+                $title = trim((string)($_POST['title'] ?? ''));
+                $content = trim((string)($_POST['content'] ?? ''));
+                $pw = (string)($_POST['password'] ?? '');
+
+                if ($name === '' || $title === '' || $content === '' || $pw === '') {
+                    $message = '닉네임, 제목, 내용, 삭제 비밀번호를 모두 입력해 주세요.';
+                } elseif (charCount($name) > 20 || charCount($title) > 80 || charCount($content) > 5000) {
+                    $message = '닉네임은 20자, 제목은 80자, 내용은 5000자 이내로 작성해 주세요.';
+                } elseif (strlen($pw) > 200) {
+                    $message = '비밀번호가 너무 깁니다.';
+                } else {
+                    array_unshift($posts, [
+                        'id' => bin2hex(random_bytes(8)),
+                        'name' => $name,
+                        'title' => $title,
+                        'content' => $content,
+                        'password_hash' => password_hash($pw, PASSWORD_DEFAULT),
+                        'date' => date('Y-m-d H:i'),
+                        'views' => 0
+                    ]);
+                    savePosts($dataFile, $posts);
+                    $newId = $posts[0]['id'];
+                    flock($lock, LOCK_UN);
+                    fclose($lock);
+                    header('Location: board.php?id=' . rawurlencode($newId));
+                    exit;
+                }
+            } elseif ($action === 'delete') {
+                $id = (string)($_POST['id'] ?? '');
+                $pw = (string)($_POST['password'] ?? '');
+                $found = false;
+
+                foreach ($posts as $i => $post) {
+                    if (($post['id'] ?? '') !== $id) continue;
+                    $found = true;
+                    $isMaster = hash_equals((string)BOARD_MASTER_PASSWORD, $pw);
+                    $isAuthor = isset($post['password_hash'])
+                        && password_verify($pw, $post['password_hash']);
+
+                    if ($isMaster || $isAuthor) {
+                        array_splice($posts, $i, 1);
+                        savePosts($dataFile, $posts);
+                        $message = '게시글을 삭제했습니다.';
+                    } else {
+                        $message = '삭제 비밀번호가 올바르지 않습니다.';
+                    }
+                    break;
+                }
+                if (!$found) $message = '게시글을 찾을 수 없습니다.';
+            }
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        } catch (Throwable $ex) {
+            if (isset($lock) && is_resource($lock)) {
+                @flock($lock, LOCK_UN);
+                @fclose($lock);
+            }
+            error_log('Board error: ' . $ex->getMessage());
+            $message = '처리 중 오류가 발생했습니다. 서버 권한을 확인해 주세요.';
+        }
+    }
+}
+
+$posts = loadPosts($dataFile);
+$id = (string)($_GET['id'] ?? '');
+$selected = null;
+
+if ($id !== '') {
+    foreach ($posts as $i => $post) {
+        if (($post['id'] ?? '') !== $id) continue;
+        $selected = $post;
+        if (empty($_SESSION['board_viewed'][$id])) {
+            $lock = @fopen($lockFile, 'c');
+            if ($lock) {
+                flock($lock, LOCK_EX);
+                $latest = loadPosts($dataFile);
+                foreach ($latest as &$item) {
+                    if (($item['id'] ?? '') === $id) {
+                        $item['views'] = (int)($item['views'] ?? 0) + 1;
+                        $selected = $item;
+                        break;
+                    }
+                }
+                unset($item);
+                savePosts($dataFile, $latest);
+                flock($lock, LOCK_UN);
+                fclose($lock);
+                $_SESSION['board_viewed'][$id] = true;
+                $posts = $latest;
+            }
+        }
+        break;
+    }
+}
+?>
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>익명 게시판</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#111;color:#eee;font-family:Arial,"Malgun Gothic",sans-serif}
+main{max-width:850px;margin:30px auto;padding:0 16px}
+a{color:#c9e7ff;text-decoration:none}
+a:hover{text-decoration:underline}
+h1{font-size:26px;margin-bottom:8px}
+.sub{color:#aaa;font-size:14px;margin-bottom:22px}
+.panel{background:#1b1b1b;border:1px solid #333;border-radius:8px;padding:16px;margin-bottom:18px}
+input,textarea{width:100%;padding:11px;margin:6px 0 12px;background:#101010;border:1px solid #444;color:#fff;border-radius:5px}
+textarea{min-height:150px;resize:vertical}
+button,.button{display:inline-block;border:0;border-radius:6px;padding:10px 16px;background:#b9e3ff;color:#172b3a;font-weight:bold;cursor:pointer}
+button:hover,.button:hover{background:#d5efff;text-decoration:none}
+.post{padding:15px 8px;border-bottom:1px solid #333}
+.post:last-child{border-bottom:0}
+.post-title{font-size:16px;font-weight:bold;display:block;overflow-wrap:anywhere}
+.meta{font-size:12px;color:#999;margin-top:7px}
+.content{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;margin:22px 0}
+.notice{background:#252525;border-radius:5px;padding:12px;margin-bottom:14px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.small{font-size:12px;color:#aaa}
+</style>
+</head>
+<body>
+<main>
+<h1><a href="board.php">익명 게시판</a></h1>
+<div class="sub">자유롭게 글을 작성할 수 있는 공간입니다.</div>
+
+<?php if ($message !== ''): ?>
+<div class="notice"><?=e($message)?></div>
+<?php endif; ?>
+
+<?php if ($selected): ?>
+<section class="panel">
+<h2><?=e($selected['title'] ?? '')?></h2>
+<div class="meta">작성자 <?=e($selected['name'] ?? '익명')?> · <?=e($selected['date'] ?? '')?> · 조회 <?=e($selected['views'] ?? 0)?></div>
+<div class="content"><?=e($selected['content'] ?? '')?></div>
+<div class="actions">
+<a class="button" href="board.php">목록으로</a>
+</div>
+</section>
+<section class="panel">
+<h3>게시글 삭제</h3>
+<p class="small">작성 시 설정한 비밀번호 또는 운영자 마스터 비밀번호를 입력하세요.</p>
+<form method="post">
+<input type="hidden" name="csrf" value="<?=e($_SESSION['board_csrf'])?>">
+<input type="hidden" name="action" value="delete">
+<input type="hidden" name="id" value="<?=e($selected['id'])?>">
+<input type="password" name="password" placeholder="삭제 비밀번호" required>
+<button type="submit">게시글 삭제</button>
+</form>
+</section>
+<?php else: ?>
+<?php if (($_GET['write'] ?? '') === '1'): ?>
+<section class="panel">
+<h2>글쓰기</h2>
+<form method="post">
+<input type="hidden" name="csrf" value="<?=e($_SESSION['board_csrf'])?>">
+<input type="hidden" name="action" value="write">
+<label>닉네임</label>
+<input name="name" maxlength="20" required placeholder="닉네임">
+<label>제목</label>
+<input name="title" maxlength="80" required placeholder="게시글 제목">
+<label>내용</label>
+<textarea name="content" maxlength="5000" required placeholder="내용을 입력하세요"></textarea>
+<label>삭제 비밀번호</label>
+<input type="password" name="password" maxlength="200" required placeholder="작성글 삭제에 사용할 비밀번호">
+<button type="submit">게시글 등록</button>
+</form>
+</section>
+<p><a href="board.php">← 목록으로</a></p>
+<?php else: ?>
+<div style="display:flex;justify-content:flex-end;margin:0 0 12px;">
+<a href="board.php?write=1" style="display:inline-block;background:#b9e3ff;color:#172b3a;border:1px solid #91cefa;border-radius:5px;padding:6px 12px;font-size:13px;font-weight:bold;text-decoration:none;">+ 글쓰기</a>
+</div>
+<section class="panel">
+<h2>게시글 목록 (<?=count($posts)?>)</h2>
+<?php if (!$posts): ?>
+<p class="small">아직 게시글이 없습니다. 첫 글을 작성해 보세요.</p>
+<?php else: ?>
+<?php foreach ($posts as $post): ?>
+<div class="post">
+<a class="post-title" href="board.php?id=<?=rawurlencode((string)$post['id'])?>"><?=e($post['title'] ?? '')?></a>
+<div class="meta"><?=e($post['name'] ?? '익명')?> · <?=e($post['date'] ?? '')?> · 조회 <?=e($post['views'] ?? 0)?></div>
+</div>
+<?php endforeach; ?>
+<?php endif; ?>
+</section>
+<?php endif; ?>
+<?php endif; ?>
+<p><a href="index.html">← 메인 메뉴로 돌아가기</a></p>
+</main>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<?php
+declare(strict_types=1);
+
+session_start();
+
+$dataDir = '/var/lib/site-live';
+$dataFile = "$dataDir/chat.json";
+$lockFile = "$dataDir/chat.lock";
+
+function jsonResponse(array $data, int $status = 200): never {
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+function cleanText(string $text, int $limit): string {
+    $text = strip_tags($text);
+    $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text) ?? '';
+    if (function_exists('mb_substr')) {
+        return mb_substr(trim($text), 0, $limit, 'UTF-8');
+    }
+    return substr(trim($text), 0, $limit);
+}
+
+function accessMessages(bool $send = false, array $newMessage = []): array {
+    global $dataFile, $lockFile;
+
+    $lock = fopen($lockFile, 'c');
+    if (!$lock || !flock($lock, LOCK_EX)) {
+        jsonResponse(['error' => '저장소 잠금 실패'], 500);
+    }
+
+    $raw = @file_get_contents($dataFile);
+    $messages = json_decode($raw ?: '[]', true);
+    if (!is_array($messages)) $messages = [];
+
+    if ($send) {
+        $messages[] = $newMessage;
+        $messages = array_slice($messages, -300);
+
+        $json = json_encode($messages, JSON_UNESCAPED_UNICODE);
+        if ($json === false ||
+            file_put_contents($dataFile, $json, LOCK_EX) === false) {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+            jsonResponse(['error' => '메시지 저장 실패'], 500);
+        }
+    }
+
+    flock($lock, LOCK_UN);
+    fclose($lock);
+    return $messages;
+}
+
+if (isset($_GET['api'])) {
+    if ($_GET['api'] === 'list' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        $messages = accessMessages();
+        jsonResponse(['messages' => array_slice($messages, -100)]);
+    }
+
+    if ($_GET['api'] === 'send' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $now = time();
+        $last = (int)($_SESSION['last_chat_send'] ?? 0);
+
+        if ($now - $last < 2) {
+            jsonResponse(['error' => '메시지는 2초에 한 번씩 보낼 수 있어요.'], 429);
+        }
+
+        $nickname = cleanText((string)($_POST['nickname'] ?? ''), 24);
+        $message = cleanText((string)($_POST['message'] ?? ''), 300);
+
+        if ($nickname === '' || $message === '') {
+            jsonResponse(['error' => '닉네임과 메시지를 입력해 주세요.'], 400);
+        }
+
+        $messages = accessMessages(true, [
+            'id' => bin2hex(random_bytes(8)),
+            'nickname' => $nickname,
+            'message' => $message,
+            'time' => date('H:i:s'),
+            'created' => $now
+        ]);
+
+        $_SESSION['last_chat_send'] = $now;
+        jsonResponse(['ok' => true]);
+    }
+
+    jsonResponse(['error' => '잘못된 요청'], 400);
+}
+?>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>실시간 채팅 | 조승훈과 함께 춤을</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:sans-serif;background:#121212;color:#e0e0e0;margin:0;padding:24px}
+.container{max-width:760px;margin:auto}
+.panel{background:#1e1e1e;padding:22px;border:1px solid #333;border-radius:10px;margin-bottom:18px}
+h1,h2{color:#fff;margin-top:0}
+h1{border-bottom:2px solid #00acc1;padding-bottom:12px}
+a{color:#00acc1}
+input,button{font:inherit;border-radius:5px;padding:11px;border:1px solid #444}
+input{background:#121212;color:#fff;min-width:0}
+button{background:#00acc1;color:#071416;border:0;font-weight:bold;cursor:pointer}
+button:hover{background:#26c6da}
+#messages{height:360px;overflow:auto;background:#151515;border:1px solid #333;padding:12px;border-radius:6px}
+.msg{padding:9px 4px;border-bottom:1px solid #292929;overflow-wrap:anywhere}
+.meta{font-size:12px;color:#888;margin-bottom:5px}
+.content{white-space:pre-wrap}
+.form{display:grid;grid-template-columns:130px 1fr auto;gap:8px;margin-top:12px}
+.status{color:#aaa;font-size:14px}
+#pages{font-size:14px;line-height:1.9}
+@media(max-width:550px){body{padding:12px}.form{grid-template-columns:1fr}.panel{padding:15px}}
+</style>
+</head>
+<body>
+<div class="container">
+    <p><a href="index.html">← 메인 페이지로 돌아가기</a></p>
+    <h1>LIVE CHAT / 실시간 채팅</h1>
+
+    <section class="panel">
+        <h2>현재 접속 현황</h2>
+        <p>접속자 <strong id="count">집계 중...</strong>명</p>
+        <div id="pages" class="status">방문 페이지를 집계하고 있습니다.</div>
+        <p id="updated" class="status"></p>
+    </section>
+
+    <section class="panel">
+        <h2>모두의 채팅방</h2>
+        <div id="messages" aria-live="polite">메시지를 불러오는 중...</div>
+        <form id="chatForm" class="form">
+            <input id="nickname" maxlength="24" placeholder="닉네임" required>
+            <input id="message" maxlength="300" placeholder="메시지를 입력하세요" required>
+            <button type="submit">전송</button>
+        </form>
+        <p id="notice" class="status">최근 메시지 최대 100개를 표시합니다.</p>
+    </section>
+</div>
+
+<script>
+const messagesBox = document.getElementById('messages');
+const notice = document.getElementById('notice');
+let lastSignature = '';
+
+async function heartbeat() {
+    const body = new URLSearchParams({
+        action: 'heartbeat',
+        page: location.pathname.split('/').pop() || 'index.html'
+    });
+    try {
+        await fetch('presence.php', {
+            method: 'POST',
+            body,
+            credentials: 'same-origin',
+            cache: 'no-store'
+        });
+    } catch (_) {}
+}
+
+async function updatePresence() {
+    try {
+        const r = await fetch('presence.php?stats=1', {cache:'no-store'});
+        const d = await r.json();
+        if (!r.ok) throw new Error();
+        document.getElementById('count').textContent = d.count;
+        const pages = Object.entries(d.pages || {});
+        document.getElementById('pages').textContent = pages.length
+            ? pages.map(([name, count]) => `${name}: ${count}명`).join(' / ')
+            : '현재 접속자를 집계 중입니다.';
+        document.getElementById('updated').textContent = '갱신: ' + d.updated;
+    } catch (_) {
+        document.getElementById('pages').textContent = '현황을 불러오지 못했습니다.';
+    }
+}
+
+async function loadMessages() {
+    try {
+        const r = await fetch('chat.php?api=list', {cache:'no-store'});
+        const d = await r.json();
+        if (!r.ok) throw new Error();
+
+        const signature = JSON.stringify(d.messages);
+        if (signature === lastSignature) return;
+        const nearBottom = messagesBox.scrollHeight - messagesBox.scrollTop
+            - messagesBox.clientHeight < 60;
+        lastSignature = signature;
+        messagesBox.replaceChildren();
+
+        if (!d.messages.length) {
+            messagesBox.textContent = '첫 메시지를 남겨 보세요!';
+        } else {
+            for (const m of d.messages) {
+                const item = document.createElement('div');
+                item.className = 'msg';
+
+                const meta = document.createElement('div');
+                meta.className = 'meta';
+                meta.textContent = `${m.time} · ${m.nickname}`;
+
+                const content = document.createElement('div');
+                content.className = 'content';
+                content.textContent = m.message;
+
+                item.append(meta, content);
+                messagesBox.appendChild(item);
+            }
+        }
+        if (nearBottom) messagesBox.scrollTop = messagesBox.scrollHeight;
+    } catch (_) {
+        notice.textContent = '채팅을 불러오지 못했습니다. 잠시 후 다시 시도합니다.';
+    }
+}
+
+document.getElementById('chatForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const button = e.currentTarget.querySelector('button');
+    button.disabled = true;
+
+    try {
+        const body = new URLSearchParams({
+            nickname: document.getElementById('nickname').value,
+            message: document.getElementById('message').value
+        });
+        const r = await fetch('chat.php?api=send', {
+            method: 'POST',
+            body,
+            credentials: 'same-origin'
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || '전송에 실패했습니다.');
+        document.getElementById('message').value = '';
+        notice.textContent = '메시지를 전송했습니다.';
+        await loadMessages();
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    } catch (err) {
+        notice.textContent = err.message;
+    } finally {
+        button.disabled = false;
+    }
+});
+
+heartbeat();
+updatePresence();
+loadMessages();
+setInterval(heartbeat, 10000);
+setInterval(updatePresence, 5000);
+setInterval(loadMessages, 2000);
+</script>
+</body>
+</html>
