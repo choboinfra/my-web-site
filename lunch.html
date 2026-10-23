@@ -47,10 +47,24 @@ const shapes=[
 ['mongolia_s','남몽골',230,200,'mongolia'],['north_china','화북',380,200,'china'],['korea_n','북한',520,200,'korea'],['honshu','혼슈',680,200,'japan'],
 ['west_china','서중국',230,320,'china'],['east_china','화동',380,320,'china'],['korea_s','남한',520,320,'korea'],['kyushu','규슈',680,320,'japan'],
 ['south_china','화남',380,440,'china'],['taiwan','대만',520,440,'china']];
-let country='korea',code='',csrf='',myId='',room=null,selected='korea_s',poll=null,busy=false,ready=false;
+let country='korea',code='',csrf='',myId='',room=null,selected='korea_s',poll=null,busy=false,actionBusy=false,ready=false;
 function toast(msg,err=false){$('toast').textContent=msg;$('toast').classList.remove('hidden');$('toast').style.borderColor=err?'#a54b5b':'#37654f';setTimeout(()=> $('toast').classList.add('hidden'),4200)}
 async function api(action,data={}){const res=await fetch('game_api.php',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:new URLSearchParams({action,csrf,...data})});let j;try{j=await res.json()}catch{throw Error('서버 응답을 읽을 수 없습니다.')}if(!res.ok||!j.ok)throw Error(j.error||'요청 실패');if(j.csrf)csrf=j.csrf;return j}
-async function run(action,data={}){if(busy)return null;busy=true;try{return await api(action,data)}catch(e){toast(e.message,true);return null}finally{busy=false}}
+async function run(action,data={}){
+if(action==='state'){
+    if(busy||actionBusy)return null;
+    busy=true;
+}else{
+    if(actionBusy)return null;
+    actionBusy=true;
+}
+try{return await api(action,data)}
+catch(e){toast(e.message,true);return null}
+finally{
+    if(action==='state')busy=false;
+    else actionBusy=false;
+}
+}
 function paintProfile(p){if(!p)return;$('profileName').textContent=p.nickname||p.username||'지휘관';$('profileLevel').textContent='LV. '+p.level;$('profileXp').textContent=(p.xp||0)+' XP · 승리 '+(p.wins||0)}
 function pick(c){country=c;document.querySelectorAll('.country').forEach(e=>e.classList.toggle('selected',e.dataset.country===c));$('myCountry').textContent=flags[c]+' '+names[c];$('bgm').src=music[c];if(!$('bgm').paused)$('bgm').play().catch(()=>{})}
 function polygon(x,y){return `${x},${y-48} ${x+62},${y-24} ${x+62},${y+24} ${x},${y+48} ${x-62},${y+24} ${x-62},${y-24}`}
