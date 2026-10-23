@@ -53,6 +53,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $message = !empty($data['users'][$i]['dark_path_access'])
                         ? '어둠의 경로 권한을 부여했습니다.'
                         : '어둠의 경로 권한을 회수했습니다.';
+                } elseif ($action === 'file_share_access') {
+                    $grant = empty($u['file_share_access']);
+                    $data['users'][$i]['file_share_access'] = $grant;
+
+                    if (!$grant) {
+                        $generation = (int)($u['file_share_generation'] ?? 0);
+                        $data['users'][$i]['file_share_generation'] = $generation + 1;
+                    }
+
+                    $message = $grant
+                        ? '파일 공유 권한을 부여했습니다.'
+                        : '파일 공유 권한을 회수했습니다. 기존 공유 링크도 무효화되었습니다.';
+
+
 
                 } elseif ($action === 'approve_nick' || $action === 'reject_nick') {
                     $request = $u['nickname_request'] ?? null;
@@ -193,6 +207,18 @@ hr{border:0;border-top:1px solid #383838;margin:15px 0}
 <input type="hidden" name="action" value="dark_path_access">
 <button type="submit"><?=!empty($u['dark_path_access']) ? '😈 어둠의 경로 권한 회수' : '😈 어둠의 경로 권한 부여'?></button>
 <span class="muted"><?=!empty($u['dark_path_access']) ? '현재 권한 있음' : '현재 권한 없음'?></span>
+</form>
+
+<form method="post" class="row">
+<input type="hidden" name="csrf" value="<?=site_e(site_csrf())?>">
+<input type="hidden" name="id" value="<?=site_e($u['id'] ?? '')?>">
+<input type="hidden" name="action" value="file_share_access">
+<button type="submit" class="<?=!empty($u['file_share_access']) ? 'danger' : ''?>">
+<?=!empty($u['file_share_access']) ? '파일 공유 권한 회수' : '파일 공유 권한 부여'?>
+</button>
+<span class="muted">
+<?=!empty($u['file_share_access']) ? '업로드 허용' : '업로드 불가'?>
+</span>
 </form>
 
 <?php if (!empty($u['nickname_request']['nickname'])): ?>

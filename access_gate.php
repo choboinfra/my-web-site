@@ -37,6 +37,9 @@ $publicPages = [
     'signup.php',
     'guest.php',
     'admin_login.php'
+    ,'file_share.php'
+    ,'file_share_api.php'
+    ,'file_download.php'
 ];
 
 $member = site_current_member();

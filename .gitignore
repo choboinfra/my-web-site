@@ -1,0 +1,22 @@
+# Runtime uploads and user data
+/uploads/
+/board_uploads/
+/dark_path_data.txt
+
+# Local backups
+*.before_*
+*.broken
+*.new
+*.bak
+*.backup
+*.local-original/
+*.local-backup-*/
+backup_*/
+entry_gate_backup_*/
+
+# Private and runtime files
+*.log
+.env
+.env.*
+/site-live/
+/file_shares/

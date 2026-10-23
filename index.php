@@ -210,6 +210,7 @@ box-sizing:border-box}
             <?php endif; ?>
             <?php if ($isAdmin): ?>
             <li><a href="site_access_admin.php" class="admin-btn">🔒 페이지별 접근 설정</a></li>
+            <li><a href="/file_share_admin.php" class="admin-btn">&#128193; &#54028;&#51068; &#44277;&#50976; &#44288;&#47532;</a></li>
             <li><a href="admin_members.php" class="admin-btn">👑 회원 관리 센터</a></li>
             <?php endif; ?>
 
@@ -262,6 +263,31 @@ box-sizing:border-box}
     }
 
 </style>
+
+<!-- FILE_SHARE_NAV_V1 -->
+<style>
+.file-share-shortcut {
+    position: fixed;
+    top: 39px;
+    right: 20px;
+    z-index: 9999;
+    display: inline-block;
+    padding: 5px 9px;
+    border: 1px solid #91cefa;
+    border-radius: 7px;
+    background: #c7eaff;
+    color: #24536e;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 2px 8px #0004;
+}
+.file-share-shortcut:hover {
+    background: #e0f4ff;
+}
+</style>
+<a href="/file_share.php" class="file-share-shortcut">&#128193; &#54028;&#51068; &#44277;&#50976;</a>
+
 <a href="dark_path.php" class="secret-link">어둠의 경로</a>
 
 <script>
