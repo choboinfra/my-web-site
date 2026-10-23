@@ -81,16 +81,55 @@ function room_code(array $rooms): string {
 }
 function logline(array &$r,string $msg): void { $r['log'][]='['.date('H:i:s').'] '.$msg;$r['log']=array_slice($r['log'],-40); }
 function region_templates(): array {
-    $out=[];foreach(REGIONS as $t)$out[]=$t+['owner_id'=>null,'troops'=>0,'food'=>0,'metal'=>0,'fort_level'=>0];return $out;
+    $out=[];foreach(REGIONS as $t)$out[]=$t+['owner_id'=>null,'troops'=>0,'food'=>0,'metal'=>0,'fort_level'=>0,'port_level'=>0];return $out;
+}
+function capital_region(string $country): string {
+    return ['korea'=>'korea_s','japan'=>'honshu','china'=>'east_china','mongolia'=>'mongolia_s'][$country] ?? 'east_china';
+}
+function supplied_region_ids(array $r, string $ownerId): array {
+    $byId=[];
+    foreach(($r['territories']??[]) as $t) $byId[(string)($t['id']??'')]=$t;
+    $capital=null;
+    foreach(($r['players']??[]) as $p) if((string)($p['id']??'')===$ownerId) {
+        $candidate=capital_region((string)($p['country']??''));
+        if(($byId[$candidate]['owner_id']??null)===$ownerId) $capital=$candidate;
+        break;
+    }
+    if($capital===null) return [];
+    $seen=[$capital=>true];$queue=[$capital];
+    while($queue) {
+        $cur=array_shift($queue);
+        foreach(($byId[$cur]['neighbors']??[]) as $next) {
+            if(isset($seen[$next]) || (($byId[$next]['owner_id']??null)!==$ownerId)) continue;
+            $edge=$cur<$next?$cur.'|'.$next:$next.'|'.$cur;
+            if(in_array($edge,['korea_s|kyushu','east_china|taiwan','kyushu|taiwan','south_china|taiwan'],true)) {
+                $tech=research_levels($r,$ownerId);
+                if((int)($byId[$cur]['port_level']??0)<1||(int)($byId[$next]['port_level']??0)<1||(int)$tech['navy']<1) continue;
+            }
+            $seen[$next]=true;$queue[]=$next;
+        }
+    }
+    return array_keys($seen);
+}
+function research_levels(array $r, string $ownerId): array {
+    $defaults=['logistics'=>0,'army'=>0,'navy'=>0];
+    $saved=$r['research'][$ownerId]??[];
+    foreach($defaults as $k=>$v)$defaults[$k]=max(0,min(3,(int)($saved[$k]??0)));
+    return $defaults;
 }
 function tick_economy(array &$r): void {
     if(($r['status']??'')!=='playing'||empty($r['map_version']))return;
     $now=time();$last=(int)($r['last_tick']??$now);$ticks=max(0,min(60,$now-$last));if(!$ticks)return;
     foreach($r['players'] as $p){
-        $owned=0;foreach($r['territories'] as $t)if(($t['owner_id']??null)===$p['id'])$owned++;
-        $id=$p['id'];if(!isset($r['economy'][$id]))$r['economy'][$id]=['food'=>50,'metal'=>30];
-        $r['economy'][$id]['food']+=(int)floor($owned*0.8*$ticks);
-        $r['economy'][$id]['metal']+=(int)floor($owned*0.45*$ticks);
+        $id=(string)$p['id'];$supplied=count(supplied_region_ids($r,$id));$tech=research_levels($r,$id);
+        if(!isset($r['economy'][$id]))$r['economy'][$id]=['food'=>50,'metal'=>30];
+        $mult=1+0.15*$tech['logistics'];
+        if(!isset($r['income_fraction'][$id])||!is_array($r['income_fraction'][$id]))$r['income_fraction'][$id]=['food'=>0.0,'metal'=>0.0];
+        $foodTotal=(float)$r['income_fraction'][$id]['food']+$supplied*0.8*$ticks*$mult;
+        $metalTotal=(float)$r['income_fraction'][$id]['metal']+$supplied*0.45*$ticks*$mult;
+        $foodGain=(int)floor($foodTotal);$metalGain=(int)floor($metalTotal);
+        $r['income_fraction'][$id]=['food'=>$foodTotal-$foodGain,'metal'=>$metalTotal-$metalGain];
+        $r['economy'][$id]['food']+=$foodGain;$r['economy'][$id]['metal']+=$metalGain;
     }
     $r['last_tick']=$now;
 }
@@ -124,7 +163,10 @@ function tick_armies(array &$s, array &$r): void {
             foreach($r['players'] as $pl){if((string)$pl['id']===$sender)$senderTeam=(string)($pl['team_id']??'');if((string)$pl['id']===(string)$dst['owner_id'])$targetTeam=(string)($pl['team_id']??'');}
             if($senderTeam!==null && $senderTeam!=='' && $senderTeam===$targetTeam){$dst['troops']=(int)($dst['troops']??0)+$troops;logline($r,($a['nickname']??'아군').'의 지원 병력이 아군 '.$dst['name'].'에 합류했습니다.');unset($src,$dst);continue;}
         }
-        $def=(int)($dst['troops']??0); $power=$troops*random_int(88,112)/100; $fortLevel=max(0,min(3,(int)($dst['fort_level']??0))); $defPower=max(1,$def)*random_int(88,112)/100*(1+0.18*$fortLevel);
+        $def=(int)($dst['troops']??0); $fortLevel=max(0,min(3,(int)($dst['fort_level']??0))); $senderTech=research_levels($r,$sender);
+        $defOwner=(string)($dst['owner_id']??'');$defTech=research_levels($r,$defOwner);
+        $power=$troops*random_int(88,112)/100*(1+0.12*$senderTech['army']);
+        $defPower=max(1,$def)*random_int(88,112)/100*(1+0.18*$fortLevel+0.08*$defTech['army']);
         if ($power>$defPower) {
             $oldOwner=$dst['owner_id']??null; $dst['owner_id']=$sender; $dst['troops']=max(1,(int)floor($troops-$def*.55));
             if (!isset($s['profiles'][$sender])) $s['profiles'][$sender]=['xp'=>0,'wins'=>0,'captures'=>0,'games'=>0];
@@ -140,7 +182,7 @@ function tick_armies(array &$s, array &$r): void {
 function surrender_player(array &$s, array &$r, string $id, string $reason='항복'): void {
     foreach ($r['players'] as &$p) if (($p['id']??'')===$id) { $p['surrendered']=true; $p['ready']=false; $name=$p['nickname']??'지휘관'; } unset($p);
     foreach ($r['territories'] as &$t) if (($t['owner_id']??null)===$id) { $t['owner_id']=null; $t['troops']=0; } unset($t);
-    unset($r['economy'][$id]);
+    unset($r['economy'][$id],$r['income_fraction'][$id]);
     $r['armies']=array_values(array_filter($r['armies']??[],fn($a)=>($a['owner_id']??'')!==$id));
     logline($r,($name??'지휘관').'이(가) '.$reason.'했습니다.');
     if (game_decided($r)) finish_game($s,$r);
@@ -168,14 +210,18 @@ function finish_game(array &$s,array &$r): void {
 }
 function public_room(array $r): array {
     $players=[];foreach($r['players']??[] as $p)$players[]=['id'=>$p['id'],'nickname'=>$p['nickname'],'username'=>$p['username']??'','country'=>$p['country'],'level'=>$p['level']??1,'ready'=>(bool)($p['ready']??false),'surrendered'=>(bool)($p['surrendered']??false),'team_id'=>$p['team_id']??null];
-    $territories=[];foreach($r['territories']??[] as $t){$owner=null;foreach($players as $p)if($p['id']===($t['owner_id']??null))$owner=$p;
+    $territories=[];$suppliedBy=[];
+    foreach($players as $p)$suppliedBy[$p['id']]=array_flip(supplied_region_ids($r,(string)$p['id']));
+    foreach($r['territories']??[] as $t){$owner=null;foreach($players as $p)if($p['id']===($t['owner_id']??null))$owner=$p;
+      $ownerId=(string)($t['owner_id']??'');
       $territories[]=['id'=>$t['id']??null,'name'=>$t['name'],'x'=>$t['x']??0,'y'=>$t['y']??0,'neighbors'=>$t['neighbors']??[],
         'yield'=>$t['yield']??[],'owner_id'=>$t['owner_id']??null,'owner_name'=>$owner['nickname']??null,'owner_flag'=>FLAGS[$owner['country']??'']??'',
-        'troops'=>(int)($t['troops']??0),'fort_level'=>max(0,min(3,(int)($t['fort_level']??0)))];}
-    $eco=[];foreach($players as $p)$eco[$p['id']]=$r['economy'][$p['id']]??['food'=>0,'metal'=>0];
+        'troops'=>(int)($t['troops']??0),'fort_level'=>max(0,min(3,(int)($t['fort_level']??0))),
+        'port_level'=>max(0,min(2,(int)($t['port_level']??0))),'supplied'=>isset($suppliedBy[$ownerId][$t['id']])];}
+    $eco=[];$research=[];foreach($players as $p){$eco[$p['id']]=$r['economy'][$p['id']]??['food'=>0,'metal'=>0];$research[$p['id']]=research_levels($r,(string)$p['id']);}
     return ['code'=>$r['code'],'status'=>$r['status'],'mode'=>$r['mode']??'free','host_id'=>$r['host_id'],'players'=>$players,'territories'=>$territories,
       'log'=>array_values($r['log']??[]),'ends_at'=>(int)($r['ends_at']??0),'winner_name'=>$r['winner_name']??null,
-      'result_awarded'=>(bool)($r['result_awarded']??false),'map_version'=>(int)($r['map_version']??1),'economy'=>$eco,'armies'=>array_values($r['armies']??[])];
+      'result_awarded'=>(bool)($r['result_awarded']??false),'map_version'=>(int)($r['map_version']??1),'economy'=>$eco,'research'=>$research,'armies'=>array_values($r['armies']??[])];
 }
 $lock=@fopen(LOCK_FILE,'c');if(!$lock||!flock($lock,LOCK_EX))fail('게임 잠금을 얻지 못했습니다. 잠시 후 다시 시도해 주세요.',503);
 try {
@@ -195,7 +241,7 @@ try {
         $team=(string)($_POST['team_id']??'blue');if(!in_array($team,['blue','red'],true))$team='blue';
         $new=['code'=>room_code($s['rooms']),'mode'=>$mode,'status'=>'waiting','host_id'=>$id,'created_at'=>time(),'ends_at'=>0,'winner_id'=>null,'winner_name'=>null,'result_awarded'=>false,
           'players'=>[['id'=>$id,'username'=>$profile['username'],'nickname'=>$profile['nickname'],'country'=>$country,'level'=>$profile['level'],'ready'=>true,'team_id'=>$mode==='team'?$team:null]],
-          'territories'=>region_templates(),'log'=>[],'map_version'=>2,'armies'=>[],'economy'=>[$id=>['food'=>80,'metal'=>50]],'last_tick'=>time()];
+          'territories'=>region_templates(),'log'=>[],'map_version'=>2,'armies'=>[],'research'=>[$id=>['logistics'=>0,'army'=>0,'navy'=>0]],'economy'=>[$id=>['food'=>80,'metal'=>50]],'last_tick'=>time()];
         $s['rooms'][]=$new;$ri=count($s['rooms'])-1;logline($s['rooms'][$ri],$profile['nickname'].' 지휘관이 작전실을 개설했습니다.');write_state($s);
         reply(['ok'=>true,'csrf'=>site_csrf(),'profile'=>$profile,'room'=>public_room($s['rooms'][$ri])]);
     }
@@ -212,7 +258,7 @@ try {
         $mode=(string)($r['mode']??'free');$teamId=null;
         if($mode==='team'){$teamId=$requestedTeam;$teamCount=0;foreach($r['players'] as $p)if((string)($p['team_id']??'blue')===$teamId)$teamCount++;if($teamCount>=2)fail('해당 팀은 이미 2명으로 가득 찼습니다.',409);}
         $r['players'][]=['id'=>$id,'username'=>$profile['username'],'nickname'=>$profile['nickname'],'country'=>$country,'level'=>$profile['level'],'ready'=>false,'team_id'=>$teamId];
-        $r['economy'][$id]=['food'=>80,'metal'=>50];logline($r,$profile['nickname'].' 지휘관이 참가했습니다.');write_state($s);
+        $r['economy'][$id]=['food'=>80,'metal'=>50];if(!isset($r['research']))$r['research']=[];$r['research'][$id]=['logistics'=>0,'army'=>0,'navy'=>0];logline($r,$profile['nickname'].' 지휘관이 참가했습니다.');write_state($s);
         reply(['ok'=>true,'csrf'=>site_csrf(),'profile'=>$profile,'room'=>public_room($r)]);
     }
     if($ri===null)fail('전투실을 찾을 수 없습니다.',404);
@@ -228,6 +274,9 @@ try {
         if(($r['mode']??'free')==='team'){$teams=[];foreach($r['players'] as $p)$teams[(string)($p['team_id']??'blue')]=true;if(count($teams)<2)fail('팀전은 청색팀과 적색팀에 각각 1명 이상 필요합니다.',409);}
         if((int)($r['map_version']??1)!==2)fail('이 방은 이전 버전의 전투입니다. 기존 전투를 종료한 뒤 새 방을 만들어 주세요.',409);
         $r['status']='playing';$r['started_at']=time();$r['ends_at']=time()+900;$r['last_tick']=time();
+        if(!isset($r['research'])||!is_array($r['research']))$r['research']=[];
+        if(!isset($r['income_fraction'])||!is_array($r['income_fraction']))$r['income_fraction']=[];
+        foreach($r['players'] as $pl){if(!isset($r['research'][$pl['id']]))$r['research'][$pl['id']]=['logistics'=>0,'army'=>0,'navy'=>0];if(!isset($r['income_fraction'][$pl['id']]))$r['income_fraction'][$pl['id']]=['food'=>0.0,'metal'=>0.0];}
         $startRegion=['korea'=>'korea_s','japan'=>'honshu','china'=>'east_china','mongolia'=>'mongolia_s'];
         foreach($r['players'] as $p){$start=$startRegion[$p['country']];foreach($r['territories'] as &$t)if($t['id']===$start){$t['owner_id']=$p['id'];$t['troops']=30;}unset($t);}
         logline($r,'전쟁 개시! 자원을 모아 병력을 모집하고 인접 지역을 공격하세요.');
@@ -240,6 +289,38 @@ try {
         if(!$owned)fail('병력을 배치할 영토가 없습니다.',409);
         $eco['food']-=$costFood;$eco['metal']-=$costMetal;$owned[0]['troops']+=(int)$amount;
         logline($r,$profile['nickname'].' 지휘관이 병력 '.$amount.'명을 모집했습니다.');
+    } elseif($action==='research'){
+        if($r['status']!=='playing'||empty($r['map_version']))fail('진행 중인 새 지도 전투에서만 연구할 수 있습니다.',409);
+        $tech=(string)($_POST['tech']??'');$defs=[
+          'logistics'=>['name'=>'군수·보급','food'=>35,'metal'=>25,'effect'=>'보급 영토의 자원 생산 +15%/단계'],
+          'army'=>['name'=>'전술 교리','food'=>25,'metal'=>35,'effect'=>'공격력 +12%/단계, 방어 보정'],
+          'navy'=>['name'=>'해군 공학','food'=>30,'metal'=>40,'effect'=>'항구 건설 비용 절감 및 해상 작전 준비']
+        ];
+        if(!isset($defs[$tech]))fail('알 수 없는 연구 항목입니다.');
+        if(!isset($r['research'])||!is_array($r['research']))$r['research']=[];
+        if(!isset($r['research'][$id]))$r['research'][$id]=['logistics'=>0,'army'=>0,'navy'=>0];
+        $lv=max(0,min(3,(int)($r['research'][$id][$tech]??0)));
+        if($lv>=3)fail('해당 기술은 최대 단계입니다.',409);
+        $costFactor=$lv+1;$foodCost=$defs[$tech]['food']*$costFactor;$metalCost=$defs[$tech]['metal']*$costFactor;
+        $eco=&$r['economy'][$id];
+        if(($eco['food']??0)<$foodCost||($eco['metal']??0)<$metalCost)fail('자원이 부족합니다. 연구 비용: 식량 '.$foodCost.', 금속 '.$metalCost,409);
+        $eco['food']-=$foodCost;$eco['metal']-=$metalCost;$r['research'][$id][$tech]=$lv+1;
+        logline($r,$profile['nickname'].' 지휘관이 '.$defs[$tech]['name'].' 연구를 '.$lv.' → '.($lv+1).'단계로 완료했습니다.');
+    } elseif($action==='build_port'){
+        if($r['status']!=='playing'||empty($r['map_version']))fail('진행 중인 새 지도 전투에서만 항구를 건설할 수 있습니다.',409);
+        $target=(string)($_POST['territory']??'');$idx=null;
+        foreach($r['territories'] as $i=>$t)if(($t['id']??'')===$target)$idx=$i;
+        if($idx===null)fail('지역을 찾을 수 없습니다.',404);
+        if(($r['territories'][$idx]['owner_id']??null)!==$id)fail('자신이 보유한 지역만 항구를 건설할 수 있습니다.',403);
+        $coastal=['manchuria','east_china','south_china','korea_s','korea_n','honshu','hokkaido','kyushu','taiwan','far_east'];
+        if(!in_array($target,$coastal,true))fail('해안에 접한 지역에만 항구를 건설할 수 있습니다.',409);
+        $level=max(0,min(2,(int)($r['territories'][$idx]['port_level']??0)));
+        if($level>=2)fail('항구는 최대 2단계입니다.',409);
+        $tech=research_levels($r,$id);$discount=max(0.7,1-0.1*$tech['navy']);
+        $foodCost=(int)ceil(35*($level+1)*$discount);$metalCost=(int)ceil(30*($level+1)*$discount);$eco=&$r['economy'][$id];
+        if(($eco['food']??0)<$foodCost||($eco['metal']??0)<$metalCost)fail('자원이 부족합니다. 항구 건설 비용: 식량 '.$foodCost.', 금속 '.$metalCost,409);
+        $eco['food']-=$foodCost;$eco['metal']-=$metalCost;$r['territories'][$idx]['port_level']=$level+1;
+        logline($r,$profile['nickname'].' 지휘관이 '.$r['territories'][$idx]['name'].'에 항구를 건설했습니다 (Lv.'.($level+1).').');
     } elseif($action==='fortify'){
         if($r['status']!=='playing'||empty($r['map_version']))fail('진행 중인 새 지도 전투에서만 요새화할 수 있습니다.',409);
         tick_economy($r);$target=(string)($_POST['territory']??'');$idx=null;
@@ -261,6 +342,13 @@ try {
         $src=&$r['territories'][$fi];$dst=&$r['territories'][$ti];
         if(($src['owner_id']??null)!==$id)fail('자신이 보유한 지역에서만 공격할 수 있습니다.',403);
         if(!in_array($to,$src['neighbors']??[],true))fail('인접한 지역만 공격할 수 있습니다.',409);
+        $seaLinks=['korea_s|kyushu','east_china|taiwan','south_china|taiwan','kyushu|taiwan'];
+        $edgeA=$from<$to?$from.'|'.$to:$to.'|'.$from;$isSea=in_array($edgeA,$seaLinks,true);
+        if($isSea){
+            $port=max(0,(int)($src['port_level']??0));$navy=research_levels($r,$id)['navy'];
+            if($port<1)fail('해상 작전에는 출발 지역에 항구가 필요합니다.',409);
+            if($navy<1)fail('해상 작전을 시작하려면 해군 공학 Lv.1 연구가 필요합니다.',409);
+        }
         if(($dst['owner_id']??null)===$id)fail('이미 보유한 지역입니다.',409);
         if(($r['mode']??'free')==='team' && !empty($dst['owner_id'])){foreach($r['players'] as $ally){if((string)$ally['id']===(string)$dst['owner_id'] && (string)($ally['team_id']??'')===(string)($r['players'][$pi]['team_id']??''))fail('팀전에서는 아군 지역을 공격할 수 없습니다.',409);}}
         $send=max(1,min((int)($_POST['troops']??10),(int)($src['troops']??0)-1));
@@ -269,7 +357,7 @@ try {
         if(!isset($r['armies'])||!is_array($r['armies']))$r['armies']=[];
         $fromDef=$r['territories'][$fi];$toDef=$r['territories'][$ti];
         $distance=hypot(((float)$toDef['x']-(float)$fromDef['x']),((float)$toDef['y']-(float)$fromDef['y']));
-        $travel=max(4,min(12,(int)round($distance/32)));
+        $travel=max(4,min(12,(int)round($distance/32)));if($isSea){$navy=research_levels($r,$id)['navy'];$travel=max(5,$travel+5-$navy-((int)($fromDef['port_level']??1)));}
         $r['armies'][]=['id'=>bin2hex(random_bytes(5)),'owner_id'=>$id,'nickname'=>$profile['nickname'],'from'=>$from,'to'=>$to,'troops'=>$send,'started_at'=>microtime(true),'arrives_at'=>microtime(true)+$travel,'status'=>'moving'];
         logline($r,$profile['nickname'].' 지휘관이 '.$fromDef['name'].'에서 '.$toDef['name'].'으로 병력 '.$send.'명을 출격시켰습니다. 도착 예정 '.$travel.'초.');
     } elseif($action==='surrender'){
