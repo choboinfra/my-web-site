@@ -1,30 +1,217 @@
-<!DOCTYPE html>
-<html lang="jp">
+<!doctype html>
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>MENU suisenki</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 80px; background: #fff5f5; }
-        h1 { color: #333; }
-        .box { font-size: 2rem; font-weight: bold; color: #ff5722; margin: 30px; }
-        button { padding: 12px 25px; font-size: 1.1rem; cursor: pointer; border-radius: 8px; border: none; background: #ff5722; color: white; }
-        button:hover { background: #e0481d; }
-        .back-btn { display: inline-block; margin-top: 40px; color: #666; text-decoration: none; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>실시간 전략 시뮬레이션 게임</title>
+<style>
+:root{--bg:#090e18;--panel:#111a29;--panel2:#172337;--line:#293a53;--text:#edf4ff;--muted:#93a5bf;--blue:#7dc4ff;--gold:#e9c77b;--green:#7ee0b0;--red:#ff8793}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -15%,#233b5c 0,transparent 55%),var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+button,input,select{font:inherit}button{cursor:pointer;border:1px solid #3a5679;background:linear-gradient(180deg,#2b527a,#1b3554);color:#f3f8ff;padding:10px 15px;border-radius:10px;font-weight:750;transition:.15s}button:hover{filter:brightness(1.14);transform:translateY(-1px)}button:disabled{opacity:.4;cursor:not-allowed;transform:none}.secondary{background:#1a2638;border-color:#35445c}.gold{background:linear-gradient(180deg,#8b7039,#5e4926);border-color:#b39450}.danger{background:#48232e;border-color:#874452}
+a{color:var(--blue)}.wrap{width:min(1180px,100%);margin:auto;padding:22px 16px 50px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.brand{display:flex;align-items:center;gap:13px}.crest{width:48px;height:48px;border:1px solid #56769b;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#25466b,#101c30);font-size:25px}.eyebrow{font-size:11px;letter-spacing:.2em;color:var(--gold);font-weight:800}.brand h1{font-size:clamp(21px,3vw,30px);line-height:1.2;margin:3px 0}.sub{color:var(--muted);font-size:13px}.profile-pill{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:#101a2a;border-radius:14px;padding:9px 12px;min-width:180px}.avatar{width:38px;height:38px;border-radius:12px;background:#263e5e;display:grid;place-items:center;font-size:21px}.level{display:inline-flex;align-items:center;gap:5px;border:1px solid #8a7447;background:#3b3222;color:#ffe3a1;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:900}.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,.85fr);gap:16px}.panel{background:linear-gradient(145deg,rgba(22,34,53,.97),rgba(12,20,33,.98));border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 18px 45px #0003}.panel-head{padding:17px 19px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}.panel-head h2{font-size:16px;margin:0}.panel-body{padding:18px}.map-banner{min-height:175px;border-radius:14px;border:1px solid #344a68;overflow:hidden;position:relative;background:radial-gradient(ellipse at 50% 45%,#345575 0,#1c354c 35%,#101b2c 76%)}.map-banner:before{content:"";position:absolute;inset:0;background:linear-gradient(30deg,transparent 48%,#a4c9e511 49%,transparent 50%),linear-gradient(150deg,transparent 48%,#a4c9e511 49%,transparent 50%);background-size:46px 46px}.map-title{position:relative;padding:24px}.map-title .big{font-size:25px;font-weight:900;letter-spacing:.02em}.map-title p{margin:6px 0 0;color:#c1d3e8;max-width:470px}.country-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:15px 0}.country{padding:12px 8px;text-align:center;border:1px solid #33445e;border-radius:13px;background:#101a2a;min-width:0}.country.selected{border-color:var(--gold);box-shadow:inset 0 0 0 1px #b89a58;background:#2a281f}.flag{font-size:27px}.country strong{display:block;font-size:13px;margin-top:4px}.country small{color:var(--muted);font-size:11px}.country button{margin-top:9px;padding:6px 9px;font-size:11px;width:100%}.field{display:flex;gap:9px;margin-top:12px}.field input{min-width:0;flex:1;background:#0a1220;color:var(--text);border:1px solid #34445d;border-radius:10px;padding:10px 12px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}.field .fieldcol{flex:1;min-width:0}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.note{font-size:12px;color:var(--muted);margin:12px 0 0}.status{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#a9f0ce}.dot{width:7px;height:7px;background:#69d7a3;border-radius:50%;box-shadow:0 0 10px #69d7a388}.player-list{display:grid;gap:9px}.player{display:flex;align-items:center;gap:10px;border:1px solid #2b3b52;background:#0d1726;border-radius:12px;padding:10px}.player .pflag{font-size:24px;width:32px;text-align:center}.player-main{flex:1;min-width:0}.player-main strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.player-main small{color:var(--muted)}.empty{border:1px dashed #354660;border-radius:12px;padding:18px;text-align:center;color:var(--muted)}.xpbar{height:6px;border-radius:99px;background:#29384d;overflow:hidden;margin-top:7px}.xpbar span{display:block;height:100%;background:linear-gradient(90deg,#5ba9ef,#b1dfff);width:0}.musicbox{margin-top:14px;border:1px solid #30425c;border-radius:13px;padding:13px;background:#0c1523}.musichead{display:flex;align-items:center;justify-content:space-between;gap:8px}.musichead strong{font-size:13px}.music-controls{display:flex;align-items:center;gap:9px;margin-top:10px}.music-controls input{flex:1;min-width:0;accent-color:#8ecbff}.music-controls button{padding:7px 10px}.tiny{font-size:11px;color:var(--muted)}.roomcode{font-size:21px;font-weight:900;letter-spacing:.15em;color:#ffe4a2}.game-area{display:none}.game-area.active{display:block}.lobby-area.hidden{display:none}.territory-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}.territory{padding:12px 6px;background:#111d2e;border:1px solid #35465e;border-radius:12px;text-align:center}.territory strong{display:block;font-size:12px}.territory .count{font-size:22px;font-weight:900;margin:5px 0}.territory small{color:var(--muted)}.territory.mine{border-color:#6e9fc8;background:#172b40}.log{background:#09111d;border:1px solid #27364b;border-radius:12px;padding:12px;max-height:155px;overflow:auto;font-size:12px;color:#bdcce0}.log p{margin:0 0 6px}.toast{display:none;margin:12px 0;padding:10px 12px;border-radius:10px;background:#163329;border:1px solid #326d54;color:#b8f4d6}.toast.show{display:block}.error{background:#391d27;border-color:#7b3c4c;color:#ffc2cb}.footer{display:flex;justify-content:space-between;gap:12px;margin-top:16px;color:#71839d;font-size:11px}.back{display:inline-block;margin-top:18px;color:#9cb3d0;text-decoration:none;font-size:13px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.top{align-items:flex-start}.profile-pill{min-width:0}.country-row{grid-template-columns:repeat(2,minmax(0,1fr))}.territory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:15px 11px 35px}.panel-body{padding:14px}.map-title{padding:20px}.brand .sub{display:none}}
+</style>
 </head>
 <body>
-    <h1> 今日は何食べよう?</h1>
-    <div class="box" id="menu">ウラ</div>
-    <button onclick="pick()">ヤッハ</button>
-    <br>
-    <a href="index.php" class="back-btn">戻る</a>
+<div class="wrap">
+<header class="top">
+  <div class="brand"><div class="crest">⚔</div><div><div class="eyebrow">EAST ASIA · GRAND STRATEGY</div><h1>실시간 전략 시뮬레이션 게임</h1><div class="sub">영토를 확장하고, 동맹을 만들고, 동아시아의 패권을 차지하라.</div></div></div>
+  <div class="profile-pill"><div class="avatar" id="profileFlag">🛡️</div><div><strong id="profileName">지휘관</strong><div><span class="level" id="profileLevel">LV. 1 · 신병</span></div></div></div>
+</header>
 
-    <script>
-        const menus = ["(ラーメン)", "(カレー)", "(やよい軒)", "(食べるな)", "( コンビニ)",  "(モスバーガー)" ];
-        function pick() {
-            const random = menus[Math.floor(Math.random() * menus.length)];
-            document.getElementById('menu').innerText = random;
-        }
-    </script>
+<div id="toast" class="toast"></div>
+<div class="layout lobby-area" id="lobbyArea">
+  <section class="panel">
+    <div class="panel-head"><h2>작전 준비실</h2><span class="status"><span class="dot"></span> 서버 연결 대기</span></div>
+    <div class="panel-body">
+      <div class="map-banner"><div class="map-title"><div class="eyebrow">THE EASTERN FRONT</div><div class="big">동아시아 패권전</div><p>한국 · 일본 · 중국 · 몽골. 최대 4명의 지휘관이 실시간으로 영토를 두고 경쟁합니다.</p></div></div>
+      <h3 style="font-size:14px;margin:18px 0 8px">플레이할 국가 선택</h3>
+      <div class="country-row" id="countryRow">
+        <div class="country selected" data-country="korea"><div class="flag">🇰🇷</div><strong>한국</strong><small>균형형</small><button type="button" data-pick="korea">선택</button></div>
+        <div class="country" data-country="japan"><div class="flag">🇯🇵</div><strong>일본</strong><small>기동형</small><button type="button" data-pick="japan">선택</button></div>
+        <div class="country" data-country="china"><div class="flag">🇨🇳</div><strong>중국</strong><small>대국형</small><button type="button" data-pick="china">선택</button></div>
+        <div class="country" data-country="mongolia"><div class="flag">🇲🇳</div><strong>몽골</strong><small>기병형</small><button type="button" data-pick="mongolia">선택</button></div>
+      </div>
+      <div class="field">
+        <div class="fieldcol"><label for="roomInput">방 코드로 참가 (선택 사항)</label><input id="roomInput" maxlength="8" placeholder="예: A7K2Q"></div>
+      </div>
+      <div class="actions"><button id="createBtn">새 전투실 만들기</button><button class="secondary" id="joinBtn">코드로 참가</button><button class="secondary" id="quickBtn">빠른 참가</button></div>
+      <p class="note">2~4인 플레이 지원. 같은 방 코드의 플레이어끼리 대기실에서 만납니다. 게임 중에는 2.5초 간격으로 상태가 갱신됩니다.</p>
+    </div>
+  </section>
+  <aside class="panel">
+    <div class="panel-head"><h2>지휘관 기록</h2><span class="level" id="rankBadge">신병</span></div>
+    <div class="panel-body">
+      <div style="display:flex;justify-content:space-between;align-items:end;gap:8px"><div><div class="tiny">현재 경험치</div><strong style="font-size:27px" id="xpText">0 XP</strong></div><div class="tiny" id="nextXp">다음 레벨까지 100 XP</div></div>
+      <div class="xpbar"><span id="xpBar"></span></div>
+      <div class="player-list" style="margin-top:16px">
+        <div class="player"><div class="pflag">🏆</div><div class="player-main"><strong>승리</strong><small>완료한 전투에서 획득</small></div><b id="winsText">0</b></div>
+        <div class="player"><div class="pflag">🗺️</div><div class="player-main"><strong>영토 점령</strong><small>전투 중 점령한 영토</small></div><b id="capturesText">0</b></div>
+        <div class="player"><div class="pflag">⚔️</div><div class="player-main"><strong>참가 전투</strong><small>결과가 저장된 전투</small></div><b id="gamesText">0</b></div>
+      </div>
+      <div class="musicbox">
+        <div class="musichead"><strong>🎵 국가별 배경음악</strong><span class="tiny" id="musicName">한국</span></div>
+        <div class="music-controls"><button class="secondary" id="musicToggle">▶ 재생</button><input id="volume" aria-label="배경음악 볼륨" type="range" min="0" max="100" value="35"><span class="tiny" id="volumeText">35%</span></div>
+        <div class="tiny" style="margin-top:6px">볼륨 설정은 이 브라우저에 저장됩니다.</div>
+        <audio id="bgm" loop preload="none"></audio>
+      </div>
+      <p class="note">레벨과 전적은 로그인한 회원별로 저장됩니다. 경험치는 서버가 전투 결과를 확인한 뒤 지급합니다.</p>
+    </div>
+  </aside>
+</div>
+
+<section class="panel" id="roomPanel" style="display:none;margin-top:16px">
+  <div class="panel-head"><h2>전투실 대기실</h2><span class="status"><span class="dot"></span><span id="roomStatus">대기 중</span></span></div>
+  <div class="panel-body">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><div class="tiny">친구에게 공유할 방 코드</div><div class="roomcode" id="roomCode">-----</div></div><div class="actions" style="margin:0"><button id="copyBtn" class="secondary">코드 복사</button><button id="readyBtn">준비 완료</button><button id="startBtn" class="gold" style="display:none">게임 시작</button><button id="leaveBtn" class="danger">나가기</button></div></div>
+    <div class="player-list" id="roomPlayers" style="margin-top:15px"></div>
+    <p class="note">2명 이상 모이면 방장(최초 생성자)이 게임을 시작할 수 있습니다. 4개국은 한 방에서 중복 선택할 수 없습니다.</p>
+  </div>
+</section>
+
+<section class="panel game-area" id="gameArea" style="margin-top:16px">
+  <div class="panel-head"><h2>전장 상황판</h2><span class="level" id="gameTimer">전투 진행 중</span></div>
+  <div class="panel-body">
+    <div class="map-banner"><div class="map-title"><div class="eyebrow">LIVE OPERATIONS</div><div class="big" id="gameHeadline">전투가 시작되었습니다</div><p id="gameHint">영토를 점령해 점수를 확보하세요.</p></div></div>
+    <div class="territory-grid" id="territories"></div>
+    <div class="actions"><button id="captureBtn">⚔️ 영토 점령 시도</button><button id="endBtn" class="secondary">전투 현황 갱신</button><button id="exitGameBtn" class="danger">전투실 나가기</button></div>
+    <p class="note">점령은 서버에서 판정됩니다. 점령 성공 시 점수와 기록이 반영됩니다. 10분 후 점수가 가장 높은 지휘관이 승리합니다.</p>
+    <h3 style="font-size:13px;margin:18px 0 8px">전투 기록</h3><div class="log" id="gameLog"><p>전투 기록을 불러오는 중…</p></div>
+  </div>
+</section>
+<div class="footer"><span>STRATEGY SIMULATION · BUILD 0.1</span><span>2–4 PLAYERS · MEMBER ONLY</span></div>
+<a class="back" href="index.php">← 메인 메뉴로 돌아가기</a>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const flags = {korea:'🇰🇷',japan:'🇯🇵',china:'🇨🇳',mongolia:'🇲🇳'};
+const names = {korea:'한국',japan:'일본',china:'중국',mongolia:'몽골'};
+const music = {korea:'music/korea.mp3',japan:'music/japan.mp3',china:'music/china.mp3',mongolia:'music/mongolia.mp3'};
+let selectedCountry='korea', roomCode='', isHost=false, ready=false, gameState=null, poller=null, busy=false;
+let csrf = '';
+const showToast = (message, error=false) => { $('toast').textContent=message; $('toast').className='toast show'+(error?' error':''); };
+async function api(action, data={}) {
+  const body = new URLSearchParams({action,csrf,...data});
+  const response = await fetch('game_api.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body,credentials:'same-origin',cache:'no-store'});
+  let json;
+  try { json=await response.json(); } catch { throw new Error('서버 응답을 읽지 못했습니다. 새로고침 후 다시 시도해 주세요.'); }
+  if (!response.ok || !json.ok) throw new Error(json.error || '요청을 처리하지 못했습니다.');
+  if (json.csrf) csrf=json.csrf;
+  return json;
+}
+function rank(level){if(level>=36)return '대전략가';if(level>=21)return '정복자';if(level>=11)return '전략가';if(level>=6)return '지휘관';return '신병';}
+function paintProfile(p){
+  if(!p)return;
+  $('profileName').textContent=p.nickname||p.username||'지휘관';
+  $('profileLevel').textContent=`LV. ${p.level} · ${rank(p.level)}`;
+  $('rankBadge').textContent=rank(p.level);
+  $('xpText').textContent=`${p.xp} XP`;
+  $('nextXp').textContent=`다음 레벨까지 ${p.next_level_xp-p.level_xp} XP`;
+  $('xpBar').style.width=`${Math.max(0,Math.min(100,p.level_xp/Math.max(1,p.next_level_xp-p.level*0)*100))}%`;
+  $('winsText').textContent=p.wins||0;$('capturesText').textContent=p.captures||0;$('gamesText').textContent=p.games||0;
+}
+function selectCountry(country){
+  selectedCountry=country;
+  document.querySelectorAll('.country').forEach(el=>el.classList.toggle('selected',el.dataset.country===country));
+  $('musicName').textContent=names[country];
+  $('bgm').src=music[country];
+  if(!$('bgm').paused){$('bgm').play().catch(()=>{});}
+}
+async function run(action,data={}){
+  if(busy)return;busy=true;
+  try{return await api(action,data);}catch(e){showToast(e.message,true);}finally{busy=false;}
+}
+async function refreshRoom(){
+  if(!roomCode)return;
+  const result=await run('state',{room:roomCode});
+  if(!result)return;
+  if(result.profile)paintProfile(result.profile);
+  gameState=result.room;
+  if(!gameState){roomCode='';stopPolling();$('roomPanel').style.display='none';$('gameArea').classList.remove('active');$('lobbyArea').classList.remove('hidden');showToast('전투실이 종료되었습니다.');return;}
+  renderRoom(gameState);
+  if(gameState.status==='playing'){renderGame(gameState);$('roomPanel').style.display='none';$('lobbyArea').classList.add('hidden');$('gameArea').classList.add('active');}
+  else if(gameState.status==='finished'){renderGame(gameState);$('gameArea').classList.add('active');$('roomPanel').style.display='none';$('lobbyArea').classList.add('hidden');}
+}
+function renderRoom(room){
+  $('roomPanel').style.display='block';$('roomCode').textContent=room.code;
+  $('roomStatus').textContent=room.status==='waiting'?'지휘관 모집 중':'전투 진행 중';
+  $('startBtn').style.display=room.host_id===window.currentMemberId?'inline-block':'none';
+  $('startBtn').disabled=room.players.length<2 || room.players.some(p=>!p.ready);
+  $('roomPlayers').innerHTML='';
+  room.players.forEach(p=>{
+    const row=document.createElement('div');row.className='player';
+    const flag=document.createElement('div');flag.className='pflag';flag.textContent=flags[p.country]||'🛡️';
+    const main=document.createElement('div');main.className='player-main';
+    const strong=document.createElement('strong');strong.textContent=p.nickname;
+    const small=document.createElement('small');small.textContent=`LV. ${p.level} · ${rank(p.level)}`;
+    main.append(strong,small);
+    const badge=document.createElement('span');badge.className='level';badge.textContent=p.ready?'준비 완료':'준비 중';
+    row.append(flag,main,badge);$('roomPlayers').append(row);
+  });
+}
+function renderGame(room){
+  const secs=Math.max(0,Math.ceil((room.ends_at-Date.now())/1000));
+  $('gameTimer').textContent=room.status==='finished'?'전투 종료':`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')} 남음`;
+  $('gameHeadline').textContent=room.status==='finished'?'전투 종료': '동아시아 패권전 진행 중';
+  $('gameHint').textContent=room.status==='finished'?(room.winner_name?`${room.winner_name} 지휘관이 승리했습니다.`:'전투가 종료되었습니다.'):'영토를 점령해 점수를 확보하세요. 점령 시도에는 1회당 1초의 재사용 대기시간이 있습니다.';
+  $('captureBtn').disabled=room.status!=='playing';
+  $('territories').innerHTML='';
+  (room.territories||[]).forEach(t=>{
+    const el=document.createElement('div');el.className='territory'+(t.owner_id===window.currentMemberId?' mine':'');
+    const title=document.createElement('strong');title.textContent=t.name;
+    const count=document.createElement('div');count.className='count';count.textContent=t.score;
+    const owner=document.createElement('small');owner.textContent=t.owner_name?`${t.owner_flag} ${t.owner_name}`:'중립 영토';
+    el.append(title,count,owner);$('territories').append(el);
+  });
+  $('gameLog').innerHTML='';
+  (room.log||[]).slice(-12).reverse().forEach(line=>{const p=document.createElement('p');p.textContent=line;$('gameLog').append(p);});
+  if(room.status==='finished' && room.result_awarded){$('captureBtn').disabled=true;}
+}
+async function createRoom(){
+  const r=await run('create',{country:selectedCountry});if(!r)return;
+  roomCode=r.room.code;isHost=true;ready=false;$('roomInput').value=roomCode;showToast('전투실을 만들었습니다. 친구에게 방 코드를 공유하세요.');await refreshRoom();startPolling();
+}
+async function joinRoom(code){
+  const r=await run('join',{room:code,country:selectedCountry});if(!r)return;
+  roomCode=r.room.code;ready=false;showToast('전투실에 참가했습니다.');await refreshRoom();startPolling();
+}
+function startPolling(){stopPolling();poller=setInterval(refreshRoom,2500);}
+function stopPolling(){if(poller){clearInterval(poller);poller=null;}}
+document.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>selectCountry(b.dataset.pick)));
+$('createBtn').addEventListener('click',createRoom);
+$('joinBtn').addEventListener('click',()=>{const code=$('roomInput').value.trim().toUpperCase();if(!code){showToast('참가할 방 코드를 입력해 주세요.',true);return;}joinRoom(code);});
+$('quickBtn').addEventListener('click',async()=>{const r=await run('quick_join',{country:selectedCountry});if(r){roomCode=r.room.code;showToast('참가 가능한 전투실을 찾았습니다.');await refreshRoom();startPolling();}});
+$('readyBtn').addEventListener('click',async()=>{const r=await run('ready',{room:roomCode,ready:ready?'0':'1'});if(r){ready=!ready;await refreshRoom();}});
+$('startBtn').addEventListener('click',async()=>{const r=await run('start',{room:roomCode});if(r){showToast('전투 시작!');await refreshRoom();}});
+$('leaveBtn').addEventListener('click',async()=>{await run('leave',{room:roomCode});roomCode='';stopPolling();$('roomPanel').style.display='none';$('lobbyArea').classList.remove('hidden');showToast('전투실에서 나왔습니다.');});
+$('copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(roomCode);showToast('방 코드를 복사했습니다.');}catch{showToast(`방 코드: ${roomCode}`);}});
+$('captureBtn').addEventListener('click',async()=>{const r=await run('capture',{room:roomCode,country:selectedCountry});if(r){if(r.profile)paintProfile(r.profile);await refreshRoom();}});
+$('endBtn').addEventListener('click',refreshRoom);
+$('exitGameBtn').addEventListener('click',async()=>{await run('leave',{room:roomCode});roomCode='';stopPolling();$('gameArea').classList.remove('active');$('lobbyArea').classList.remove('hidden');showToast('전투실에서 나왔습니다.');});
+$('volume').value=localStorage.getItem('strategyBgmVolume')||'35';
+$('volumeText').textContent=$('volume').value+'%';
+$('bgm').volume=Number($('volume').value)/100;
+$('volume').addEventListener('input',()=>{const v=$('volume').value;$('bgm').volume=Number(v)/100;$('volumeText').textContent=v+'%';localStorage.setItem('strategyBgmVolume',v);});
+$('musicToggle').addEventListener('click',async()=>{const audio=$('bgm');if(audio.paused){try{await audio.play();$('musicToggle').textContent='Ⅱ 일시정지';}catch{showToast('브라우저에서 재생을 허용한 뒤 다시 눌러 주세요.',true);}}else{audio.pause();$('musicToggle').textContent='▶ 재생';}});
+$('bgm').addEventListener('pause',()=>{$('musicToggle').textContent='▶ 재생';});
+$('bgm').addEventListener('play',()=>{$('musicToggle').textContent='Ⅱ 일시정지';});
+window.addEventListener('beforeunload',stopPolling);
+(async()=>{
+  try{
+    const tokenResponse=await fetch('game_api.php?bootstrap=1',{credentials:'same-origin',cache:'no-store'});
+    const tokenData=await tokenResponse.json();
+    if(!tokenResponse.ok||!tokenData.ok)throw new Error(tokenData.error||'회원 로그인이 필요합니다.');
+    csrf=tokenData.csrf;
+    const r=await api('bootstrap');window.currentMemberId=r.member.id;paintProfile(r.profile);
+    selectCountry('korea');
+    if(r.active_room){roomCode=r.active_room;await refreshRoom();startPolling();}
+  }catch(e){document.querySelector('.wrap').innerHTML=`<section class="panel" style="padding:28px;margin-top:12vh"><h1>회원 로그인이 필요합니다</h1><p>${String(e.message).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}</p><a href="login.php">회원 로그인으로 이동</a> · <a href="index.php">메인 메뉴</a></section>`;}
+})();
+})();
+</script>
 </body>
 </html>

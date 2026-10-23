@@ -8,7 +8,7 @@ RewriteRule ^(access_gate\.php|index\.php|index\.html|admin_login\.php)$ - [L,NC
 
 # 이미지 및 정적 리소스는 정상 제공
 RewriteRule ^(uploads|board_uploads)/ - [L,NC]
-RewriteRule \.(css|js|png|jpe?g|gif|webp|ico|svg|woff2?|ttf|map)$ - [L,NC]
+RewriteRule \.(css|js|png|jpe?g|gif|webp|ico|svg|woff2?|ttf|map|mp3)$ - [L,NC]
 
 # 그 외 페이지는 서버에서 입장 여부 확인
 RewriteRule ^(.*)$ access_gate.php?__target=$1 [QSA,L]
