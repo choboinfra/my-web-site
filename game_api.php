@@ -81,7 +81,7 @@ function room_code(array $rooms): string {
 }
 function logline(array &$r,string $msg): void { $r['log'][]='['.date('H:i:s').'] '.$msg;$r['log']=array_slice($r['log'],-40); }
 function region_templates(): array {
-    $out=[];foreach(REGIONS as $t)$out[]=$t+['owner_id'=>null,'troops'=>0,'food'=>0,'metal'=>0];return $out;
+    $out=[];foreach(REGIONS as $t)$out[]=$t+['owner_id'=>null,'troops'=>0,'food'=>0,'metal'=>0,'fort_level'=>0];return $out;
 }
 function tick_economy(array &$r): void {
     if(($r['status']??'')!=='playing'||empty($r['map_version']))return;
@@ -124,7 +124,7 @@ function tick_armies(array &$s, array &$r): void {
             foreach($r['players'] as $pl){if((string)$pl['id']===$sender)$senderTeam=(string)($pl['team_id']??'');if((string)$pl['id']===(string)$dst['owner_id'])$targetTeam=(string)($pl['team_id']??'');}
             if($senderTeam!==null && $senderTeam!=='' && $senderTeam===$targetTeam){$dst['troops']=(int)($dst['troops']??0)+$troops;logline($r,($a['nickname']??'아군').'의 지원 병력이 아군 '.$dst['name'].'에 합류했습니다.');unset($src,$dst);continue;}
         }
-        $def=(int)($dst['troops']??0); $power=$troops*random_int(88,112)/100; $defPower=max(1,$def)*random_int(88,112)/100;
+        $def=(int)($dst['troops']??0); $power=$troops*random_int(88,112)/100; $fortLevel=max(0,min(3,(int)($dst['fort_level']??0))); $defPower=max(1,$def)*random_int(88,112)/100*(1+0.18*$fortLevel);
         if ($power>$defPower) {
             $oldOwner=$dst['owner_id']??null; $dst['owner_id']=$sender; $dst['troops']=max(1,(int)floor($troops-$def*.55));
             if (!isset($s['profiles'][$sender])) $s['profiles'][$sender]=['xp'=>0,'wins'=>0,'captures'=>0,'games'=>0];
@@ -171,7 +171,7 @@ function public_room(array $r): array {
     $territories=[];foreach($r['territories']??[] as $t){$owner=null;foreach($players as $p)if($p['id']===($t['owner_id']??null))$owner=$p;
       $territories[]=['id'=>$t['id']??null,'name'=>$t['name'],'x'=>$t['x']??0,'y'=>$t['y']??0,'neighbors'=>$t['neighbors']??[],
         'yield'=>$t['yield']??[],'owner_id'=>$t['owner_id']??null,'owner_name'=>$owner['nickname']??null,'owner_flag'=>FLAGS[$owner['country']??'']??'',
-        'troops'=>(int)($t['troops']??0)];}
+        'troops'=>(int)($t['troops']??0),'fort_level'=>max(0,min(3,(int)($t['fort_level']??0)))];}
     $eco=[];foreach($players as $p)$eco[$p['id']]=$r['economy'][$p['id']]??['food'=>0,'metal'=>0];
     return ['code'=>$r['code'],'status'=>$r['status'],'mode'=>$r['mode']??'free','host_id'=>$r['host_id'],'players'=>$players,'territories'=>$territories,
       'log'=>array_values($r['log']??[]),'ends_at'=>(int)($r['ends_at']??0),'winner_name'=>$r['winner_name']??null,
@@ -240,6 +240,18 @@ try {
         if(!$owned)fail('병력을 배치할 영토가 없습니다.',409);
         $eco['food']-=$costFood;$eco['metal']-=$costMetal;$owned[0]['troops']+=(int)$amount;
         logline($r,$profile['nickname'].' 지휘관이 병력 '.$amount.'명을 모집했습니다.');
+    } elseif($action==='fortify'){
+        if($r['status']!=='playing'||empty($r['map_version']))fail('진행 중인 새 지도 전투에서만 요새화할 수 있습니다.',409);
+        tick_economy($r);$target=(string)($_POST['territory']??'');$idx=null;
+        foreach($r['territories'] as $i=>$t)if(($t['id']??'')===$target)$idx=$i;
+        if($idx===null)fail('지역을 찾을 수 없습니다.',404);
+        if(($r['territories'][$idx]['owner_id']??null)!==$id)fail('자신이 보유한 지역만 요새화할 수 있습니다.',403);
+        $level=max(0,min(3,(int)($r['territories'][$idx]['fort_level']??0)));
+        if($level>=3)fail('이 지역의 방어 시설은 최대 단계입니다.',409);
+        $costFood=20+($level*15);$costMetal=15+($level*20);$eco=&$r['economy'][$id];
+        if(($eco['food']??0)<$costFood||($eco['metal']??0)<$costMetal)fail('자원이 부족합니다. 요새화 비용: 식량 '.$costFood.', 금속 '.$costMetal,409);
+        $eco['food']-=$costFood;$eco['metal']-=$costMetal;$r['territories'][$idx]['fort_level']=$level+1;
+        logline($r,$profile['nickname'].' 지휘관이 '.$r['territories'][$idx]['name'].' 방어 시설을 '.$level.' → '.($level+1).'단계로 강화했습니다.');
     } elseif($action==='attack'){
         if($r['status']!=='playing'||empty($r['map_version']))fail('진행 중인 새 지도 전투에서만 공격할 수 있습니다.',409);
         tick_economy($r);tick_armies($s,$r);
