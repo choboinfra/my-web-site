@@ -1,217 +1,102 @@
 <!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark">
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark">
 <title>실시간 전략 시뮬레이션 게임</title>
 <style>
-:root{--bg:#090e18;--panel:#111a29;--panel2:#172337;--line:#293a53;--text:#edf4ff;--muted:#93a5bf;--blue:#7dc4ff;--gold:#e9c77b;--green:#7ee0b0;--red:#ff8793}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -15%,#233b5c 0,transparent 55%),var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
-button,input,select{font:inherit}button{cursor:pointer;border:1px solid #3a5679;background:linear-gradient(180deg,#2b527a,#1b3554);color:#f3f8ff;padding:10px 15px;border-radius:10px;font-weight:750;transition:.15s}button:hover{filter:brightness(1.14);transform:translateY(-1px)}button:disabled{opacity:.4;cursor:not-allowed;transform:none}.secondary{background:#1a2638;border-color:#35445c}.gold{background:linear-gradient(180deg,#8b7039,#5e4926);border-color:#b39450}.danger{background:#48232e;border-color:#874452}
-a{color:var(--blue)}.wrap{width:min(1180px,100%);margin:auto;padding:22px 16px 50px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.brand{display:flex;align-items:center;gap:13px}.crest{width:48px;height:48px;border:1px solid #56769b;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#25466b,#101c30);font-size:25px}.eyebrow{font-size:11px;letter-spacing:.2em;color:var(--gold);font-weight:800}.brand h1{font-size:clamp(21px,3vw,30px);line-height:1.2;margin:3px 0}.sub{color:var(--muted);font-size:13px}.profile-pill{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:#101a2a;border-radius:14px;padding:9px 12px;min-width:180px}.avatar{width:38px;height:38px;border-radius:12px;background:#263e5e;display:grid;place-items:center;font-size:21px}.level{display:inline-flex;align-items:center;gap:5px;border:1px solid #8a7447;background:#3b3222;color:#ffe3a1;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:900}.layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(290px,.85fr);gap:16px}.panel{background:linear-gradient(145deg,rgba(22,34,53,.97),rgba(12,20,33,.98));border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 18px 45px #0003}.panel-head{padding:17px 19px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}.panel-head h2{font-size:16px;margin:0}.panel-body{padding:18px}.map-banner{min-height:175px;border-radius:14px;border:1px solid #344a68;overflow:hidden;position:relative;background:radial-gradient(ellipse at 50% 45%,#345575 0,#1c354c 35%,#101b2c 76%)}.map-banner:before{content:"";position:absolute;inset:0;background:linear-gradient(30deg,transparent 48%,#a4c9e511 49%,transparent 50%),linear-gradient(150deg,transparent 48%,#a4c9e511 49%,transparent 50%);background-size:46px 46px}.map-title{position:relative;padding:24px}.map-title .big{font-size:25px;font-weight:900;letter-spacing:.02em}.map-title p{margin:6px 0 0;color:#c1d3e8;max-width:470px}.country-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:15px 0}.country{padding:12px 8px;text-align:center;border:1px solid #33445e;border-radius:13px;background:#101a2a;min-width:0}.country.selected{border-color:var(--gold);box-shadow:inset 0 0 0 1px #b89a58;background:#2a281f}.flag{font-size:27px}.country strong{display:block;font-size:13px;margin-top:4px}.country small{color:var(--muted);font-size:11px}.country button{margin-top:9px;padding:6px 9px;font-size:11px;width:100%}.field{display:flex;gap:9px;margin-top:12px}.field input{min-width:0;flex:1;background:#0a1220;color:var(--text);border:1px solid #34445d;border-radius:10px;padding:10px 12px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}.field .fieldcol{flex:1;min-width:0}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.note{font-size:12px;color:var(--muted);margin:12px 0 0}.status{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#a9f0ce}.dot{width:7px;height:7px;background:#69d7a3;border-radius:50%;box-shadow:0 0 10px #69d7a388}.player-list{display:grid;gap:9px}.player{display:flex;align-items:center;gap:10px;border:1px solid #2b3b52;background:#0d1726;border-radius:12px;padding:10px}.player .pflag{font-size:24px;width:32px;text-align:center}.player-main{flex:1;min-width:0}.player-main strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.player-main small{color:var(--muted)}.empty{border:1px dashed #354660;border-radius:12px;padding:18px;text-align:center;color:var(--muted)}.xpbar{height:6px;border-radius:99px;background:#29384d;overflow:hidden;margin-top:7px}.xpbar span{display:block;height:100%;background:linear-gradient(90deg,#5ba9ef,#b1dfff);width:0}.musicbox{margin-top:14px;border:1px solid #30425c;border-radius:13px;padding:13px;background:#0c1523}.musichead{display:flex;align-items:center;justify-content:space-between;gap:8px}.musichead strong{font-size:13px}.music-controls{display:flex;align-items:center;gap:9px;margin-top:10px}.music-controls input{flex:1;min-width:0;accent-color:#8ecbff}.music-controls button{padding:7px 10px}.tiny{font-size:11px;color:var(--muted)}.roomcode{font-size:21px;font-weight:900;letter-spacing:.15em;color:#ffe4a2}.game-area{display:none}.game-area.active{display:block}.lobby-area.hidden{display:none}.territory-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}.territory{padding:12px 6px;background:#111d2e;border:1px solid #35465e;border-radius:12px;text-align:center}.territory strong{display:block;font-size:12px}.territory .count{font-size:22px;font-weight:900;margin:5px 0}.territory small{color:var(--muted)}.territory.mine{border-color:#6e9fc8;background:#172b40}.log{background:#09111d;border:1px solid #27364b;border-radius:12px;padding:12px;max-height:155px;overflow:auto;font-size:12px;color:#bdcce0}.log p{margin:0 0 6px}.toast{display:none;margin:12px 0;padding:10px 12px;border-radius:10px;background:#163329;border:1px solid #326d54;color:#b8f4d6}.toast.show{display:block}.error{background:#391d27;border-color:#7b3c4c;color:#ffc2cb}.footer{display:flex;justify-content:space-between;gap:12px;margin-top:16px;color:#71839d;font-size:11px}.back{display:inline-block;margin-top:18px;color:#9cb3d0;text-decoration:none;font-size:13px}
-@media(max-width:800px){.layout{grid-template-columns:1fr}.top{align-items:flex-start}.profile-pill{min-width:0}.country-row{grid-template-columns:repeat(2,minmax(0,1fr))}.territory-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:15px 11px 35px}.panel-body{padding:14px}.map-title{padding:20px}.brand .sub{display:none}}
-</style>
-</head>
-<body>
-<div class="wrap">
-<header class="top">
-  <div class="brand"><div class="crest">⚔</div><div><div class="eyebrow">EAST ASIA · GRAND STRATEGY</div><h1>실시간 전략 시뮬레이션 게임</h1><div class="sub">영토를 확장하고, 동맹을 만들고, 동아시아의 패권을 차지하라.</div></div></div>
-  <div class="profile-pill"><div class="avatar" id="profileFlag">🛡️</div><div><strong id="profileName">지휘관</strong><div><span class="level" id="profileLevel">LV. 1 · 신병</span></div></div></div>
-</header>
-
-<div id="toast" class="toast"></div>
-<div class="layout lobby-area" id="lobbyArea">
-  <section class="panel">
-    <div class="panel-head"><h2>작전 준비실</h2><span class="status"><span class="dot"></span> 서버 연결 대기</span></div>
-    <div class="panel-body">
-      <div class="map-banner"><div class="map-title"><div class="eyebrow">THE EASTERN FRONT</div><div class="big">동아시아 패권전</div><p>한국 · 일본 · 중국 · 몽골. 최대 4명의 지휘관이 실시간으로 영토를 두고 경쟁합니다.</p></div></div>
-      <h3 style="font-size:14px;margin:18px 0 8px">플레이할 국가 선택</h3>
-      <div class="country-row" id="countryRow">
-        <div class="country selected" data-country="korea"><div class="flag">🇰🇷</div><strong>한국</strong><small>균형형</small><button type="button" data-pick="korea">선택</button></div>
-        <div class="country" data-country="japan"><div class="flag">🇯🇵</div><strong>일본</strong><small>기동형</small><button type="button" data-pick="japan">선택</button></div>
-        <div class="country" data-country="china"><div class="flag">🇨🇳</div><strong>중국</strong><small>대국형</small><button type="button" data-pick="china">선택</button></div>
-        <div class="country" data-country="mongolia"><div class="flag">🇲🇳</div><strong>몽골</strong><small>기병형</small><button type="button" data-pick="mongolia">선택</button></div>
-      </div>
-      <div class="field">
-        <div class="fieldcol"><label for="roomInput">방 코드로 참가 (선택 사항)</label><input id="roomInput" maxlength="8" placeholder="예: A7K2Q"></div>
-      </div>
-      <div class="actions"><button id="createBtn">새 전투실 만들기</button><button class="secondary" id="joinBtn">코드로 참가</button><button class="secondary" id="quickBtn">빠른 참가</button></div>
-      <p class="note">2~4인 플레이 지원. 같은 방 코드의 플레이어끼리 대기실에서 만납니다. 게임 중에는 2.5초 간격으로 상태가 갱신됩니다.</p>
-    </div>
-  </section>
-  <aside class="panel">
-    <div class="panel-head"><h2>지휘관 기록</h2><span class="level" id="rankBadge">신병</span></div>
-    <div class="panel-body">
-      <div style="display:flex;justify-content:space-between;align-items:end;gap:8px"><div><div class="tiny">현재 경험치</div><strong style="font-size:27px" id="xpText">0 XP</strong></div><div class="tiny" id="nextXp">다음 레벨까지 100 XP</div></div>
-      <div class="xpbar"><span id="xpBar"></span></div>
-      <div class="player-list" style="margin-top:16px">
-        <div class="player"><div class="pflag">🏆</div><div class="player-main"><strong>승리</strong><small>완료한 전투에서 획득</small></div><b id="winsText">0</b></div>
-        <div class="player"><div class="pflag">🗺️</div><div class="player-main"><strong>영토 점령</strong><small>전투 중 점령한 영토</small></div><b id="capturesText">0</b></div>
-        <div class="player"><div class="pflag">⚔️</div><div class="player-main"><strong>참가 전투</strong><small>결과가 저장된 전투</small></div><b id="gamesText">0</b></div>
-      </div>
-      <div class="musicbox">
-        <div class="musichead"><strong>🎵 국가별 배경음악</strong><span class="tiny" id="musicName">한국</span></div>
-        <div class="music-controls"><button class="secondary" id="musicToggle">▶ 재생</button><input id="volume" aria-label="배경음악 볼륨" type="range" min="0" max="100" value="35"><span class="tiny" id="volumeText">35%</span></div>
-        <div class="tiny" style="margin-top:6px">볼륨 설정은 이 브라우저에 저장됩니다.</div>
-        <audio id="bgm" loop preload="none"></audio>
-      </div>
-      <p class="note">레벨과 전적은 로그인한 회원별로 저장됩니다. 경험치는 서버가 전투 결과를 확인한 뒤 지급합니다.</p>
-    </div>
-  </aside>
+:root{--bg:#08111c;--panel:#101d2c;--line:#2b4056;--text:#e8f2fc;--muted:#93a9bf;--gold:#e7c77f;--blue:#75c5ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -10%,#24435a 0,transparent 55%),var(--bg);color:var(--text);font:14px/1.5 system-ui,sans-serif}
+button,input{font:inherit}button{border:1px solid #466b8b;border-radius:9px;padding:9px 13px;background:#1b3b58;color:white;font-weight:700;cursor:pointer}button:hover{filter:brightness(1.18)}button:disabled{opacity:.4;cursor:not-allowed}.secondary{background:#1a2737;border-color:#3a4a5e}.gold{background:#66532b;border-color:#a88c4e}
+.wrap{max-width:1450px;margin:auto;padding:18px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:15px}.brand h1{font-size:clamp(20px,3vw,29px);margin:0}.eyebrow{font-size:10px;letter-spacing:.2em;color:var(--gold);font-weight:900}.muted,.note{color:var(--muted);font-size:12px}.profile{padding:10px 13px;border:1px solid var(--line);background:#101c2a;border-radius:12px}.level{color:#ffe4a2;border:1px solid #806c42;border-radius:99px;padding:2px 8px;font-size:11px}.grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,.75fr);gap:14px}.panel{border:1px solid var(--line);border-radius:15px;background:linear-gradient(145deg,#142235,#0d1724);overflow:hidden;box-shadow:0 14px 36px #0003}.head{padding:14px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px}.head h2{font-size:15px;margin:0}.body{padding:15px}.country-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.country{background:#0c1725;border:1px solid #2b4056;border-radius:10px;padding:10px 5px;text-align:center}.country.selected{border-color:var(--gold);background:#292719}.country button{margin-top:6px;padding:5px 8px;width:100%;font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.field{display:flex;gap:8px;margin-top:12px}.field input{min-width:0;flex:1;background:#07111d;border:1px solid #344b61;border-radius:9px;color:white;padding:9px}.hidden{display:none!important}.map-wrap{position:relative;background:radial-gradient(ellipse,#16364b,#0a1826 70%);border:1px solid #2d4a5f;border-radius:13px;overflow:hidden}.map-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:#0b1723;border-bottom:1px solid #2d4a5f}.map-scroll{overflow:auto}.map-svg{display:block;width:100%;min-width:660px;height:auto}.region{stroke:#a7c2d3;stroke-width:2;cursor:pointer;transition:filter .12s,stroke-width .12s}.region:hover{filter:brightness(1.25);stroke:#fff;stroke-width:3}.region.selected{stroke:#ffe29b;stroke-width:4;filter:brightness(1.2)}.region-label{font-size:13px;fill:#fff;text-anchor:middle;pointer-events:none;font-weight:800;paint-order:stroke;stroke:#07111c;stroke-width:3px;stroke-linejoin:round}.region-troops{font-size:11px;fill:#eaf6ff;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:#07111c;stroke-width:3px}.map-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted)}.dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.stat{padding:11px;border:1px solid #2c4157;background:#0b1724;border-radius:10px}.stat small{display:block;color:var(--muted)}.stat strong{font-size:22px}.selected-info{padding:12px;border:1px solid #324a61;background:#0b1724;border-radius:10px;margin-top:12px}.log{max-height:180px;overflow:auto;background:#08111b;border:1px solid #27394d;border-radius:10px;padding:10px;font-size:12px}.log p{margin:0 0 5px}.toast{padding:10px 12px;border:1px solid #37654f;background:#123126;border-radius:9px;margin-bottom:12px}.back{display:inline-block;color:#9ecfff;margin-top:15px}.music{display:flex;gap:8px;align-items:center;margin-top:10px}.music input{flex:1;min-width:0}.footer{margin-top:15px;color:#7389a0;font-size:11px;display:flex;justify-content:space-between;gap:10px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.wrap{padding:10px}.body{padding:11px}.map-svg{min-width:640px}.country-row{grid-template-columns:repeat(2,1fr)}}
+</style></head><body><div class="wrap">
+<header class="top"><div class="brand"><div class="eyebrow">EAST ASIA · GRAND STRATEGY</div><h1>실시간 전략 시뮬레이션 게임</h1><div class="muted">자원을 확보하고 병력을 지휘해 동아시아의 패권을 차지하라.</div></div><div class="profile"><strong id="profileName">지휘관</strong> <span class="level" id="profileLevel">LV. 1</span><div class="muted" id="profileXp">0 XP · 승리 0</div></div></header>
+<div id="toast" class="toast hidden"></div>
+<section class="panel" id="lobby"><div class="head"><h2>작전 준비실</h2><span class="muted">2~4인 · 로그인 회원 전용</span></div><div class="body">
+<div class="country-row">
+<div class="country selected" data-country="korea">🇰🇷 <b>한국</b><br><span class="muted">균형형</span><br><button data-pick="korea">선택</button></div>
+<div class="country" data-country="japan">🇯🇵 <b>일본</b><br><span class="muted">기동형</span><br><button data-pick="japan">선택</button></div>
+<div class="country" data-country="china">🇨🇳 <b>중국</b><br><span class="muted">대국형</span><br><button data-pick="china">선택</button></div>
+<div class="country" data-country="mongolia">🇲🇳 <b>몽골</b><br><span class="muted">기병형</span><br><button data-pick="mongolia">선택</button></div>
 </div>
-
-<section class="panel" id="roomPanel" style="display:none;margin-top:16px">
-  <div class="panel-head"><h2>전투실 대기실</h2><span class="status"><span class="dot"></span><span id="roomStatus">대기 중</span></span></div>
-  <div class="panel-body">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><div class="tiny">친구에게 공유할 방 코드</div><div class="roomcode" id="roomCode">-----</div></div><div class="actions" style="margin:0"><button id="copyBtn" class="secondary">코드 복사</button><button id="readyBtn">준비 완료</button><button id="startBtn" class="gold" style="display:none">게임 시작</button><button id="leaveBtn" class="danger">나가기</button></div></div>
-    <div class="player-list" id="roomPlayers" style="margin-top:15px"></div>
-    <p class="note">2명 이상 모이면 방장(최초 생성자)이 게임을 시작할 수 있습니다. 4개국은 한 방에서 중복 선택할 수 없습니다.</p>
-  </div>
-</section>
-
-<section class="panel game-area" id="gameArea" style="margin-top:16px">
-  <div class="panel-head"><h2>전장 상황판</h2><span class="level" id="gameTimer">전투 진행 중</span></div>
-  <div class="panel-body">
-    <div class="map-banner"><div class="map-title"><div class="eyebrow">LIVE OPERATIONS</div><div class="big" id="gameHeadline">전투가 시작되었습니다</div><p id="gameHint">영토를 점령해 점수를 확보하세요.</p></div></div>
-    <div class="territory-grid" id="territories"></div>
-    <div class="actions"><button id="captureBtn">⚔️ 영토 점령 시도</button><button id="endBtn" class="secondary">전투 현황 갱신</button><button id="exitGameBtn" class="danger">전투실 나가기</button></div>
-    <p class="note">점령은 서버에서 판정됩니다. 점령 성공 시 점수와 기록이 반영됩니다. 10분 후 점수가 가장 높은 지휘관이 승리합니다.</p>
-    <h3 style="font-size:13px;margin:18px 0 8px">전투 기록</h3><div class="log" id="gameLog"><p>전투 기록을 불러오는 중…</p></div>
-  </div>
-</section>
-<div class="footer"><span>STRATEGY SIMULATION · BUILD 0.1</span><span>2–4 PLAYERS · MEMBER ONLY</span></div>
-<a class="back" href="index.php">← 메인 메뉴로 돌아가기</a>
-</div>
-
+<div class="field"><input id="roomInput" maxlength="8" placeholder="방 코드 입력 (예: A7K2Q)"></div>
+<div class="actions"><button id="createBtn">새 전쟁 만들기</button><button class="secondary" id="joinBtn">코드로 참가</button><button class="secondary" id="quickBtn">빠른 참가</button></div>
+<p class="note">국가당 플레이어 1명. 방장이 시작하면 15분간 전쟁이 진행됩니다. 현재 진행 중인 구버전 전투는 기존 데이터 보호를 위해 자동 변환하지 않습니다.</p>
+</div></section>
+<section class="panel hidden" id="roomPanel" style="margin-top:14px"><div class="head"><h2>대기실</h2><b id="roomCode" class="level">-----</b></div><div class="body"><div id="roomPlayers"></div><div class="actions"><button id="copyBtn" class="secondary">방 코드 복사</button><button id="readyBtn">준비 완료</button><button id="startBtn" class="gold">전쟁 시작</button><button id="leaveBtn" class="secondary">나가기</button></div></div></section>
+<section class="grid hidden" id="war" style="margin-top:14px">
+<div class="panel"><div class="head"><h2>동아시아 전선 지도</h2><span id="timer" class="level">전쟁 대기</span></div><div class="body">
+<div class="map-wrap"><div class="map-head"><b>작전 지도 · 지역을 선택하세요</b><div class="map-legend"><span><i class="dot" style="background:#326ba5"></i>한국</span><span><i class="dot" style="background:#a34d4d"></i>일본</span><span><i class="dot" style="background:#b18a3e"></i>중국</span><span><i class="dot" style="background:#3d876b"></i>몽골</span><span><i class="dot" style="background:#344454"></i>중립</span></div></div><div class="map-scroll"><svg id="map" class="map-svg" viewBox="0 0 820 535" role="img" aria-label="동아시아 전략 지도"></svg></div></div>
+<div class="selected-info" id="regionInfo">지역을 선택하면 병력과 공격 정보를 볼 수 있습니다.</div>
+<div class="actions"><label class="muted">공격 병력 <input id="attackCount" type="number" min="5" max="200" value="15" style="width:80px;background:#08111b;color:white;border:1px solid #344b61;border-radius:7px;padding:6px"></label><button id="attackBtn">⚔ 선택 지역 공격</button><button id="recruitBtn" class="gold">＋ 병력 10명 모집</button><button id="refreshBtn" class="secondary">현황 갱신</button></div>
+<p class="note">인접 지역만 공격할 수 있습니다. 공격에는 출발 지역 병력이 필요하며, 전투 결과는 서버에서 판정됩니다.</p></div></div>
+<aside class="panel"><div class="head"><h2>국가 운영</h2><span id="myCountry" class="level">🇰🇷 한국</span></div><div class="body">
+<div class="stats"><div class="stat"><small>식량</small><strong id="food">80</strong></div><div class="stat"><small>금속</small><strong id="metal">50</strong></div><div class="stat"><small>보유 지역</small><strong id="owned">0</strong></div><div class="stat"><small>총 병력</small><strong id="army">0</strong></div></div>
+<h3 style="font-size:13px">지휘관</h3><div id="players"></div><h3 style="font-size:13px;margin-top:18px">전쟁 기록</h3><div class="log" id="logs"></div>
+<div class="music"><button id="musicToggle" class="secondary">▶ BGM</button><input id="volume" type="range" min="0" max="100" value="35"><span id="volumeText" class="muted">35%</span></div><div class="muted">선택한 국가의 BGM · 볼륨은 이 브라우저에 저장</div><audio id="bgm" loop preload="none"></audio>
+</div></aside></section>
+<a class="back" href="index.php">← 메인 메뉴로 돌아가기</a><div class="footer"><span>STRATEGY SIMULATION · MAP WARFARE BUILD 0.2</span><span>PHP API · SHARED NFS STATE</span></div></div>
 <script>
-(() => {
-'use strict';
-const $ = id => document.getElementById(id);
-const flags = {korea:'🇰🇷',japan:'🇯🇵',china:'🇨🇳',mongolia:'🇲🇳'};
-const names = {korea:'한국',japan:'일본',china:'중국',mongolia:'몽골'};
-const music = {korea:'music/korea.mp3',japan:'music/japan.mp3',china:'music/china.mp3',mongolia:'music/mongolia.mp3'};
-let selectedCountry='korea', roomCode='', isHost=false, ready=false, gameState=null, poller=null, busy=false;
-let csrf = '';
-const showToast = (message, error=false) => { $('toast').textContent=message; $('toast').className='toast show'+(error?' error':''); };
-async function api(action, data={}) {
-  const body = new URLSearchParams({action,csrf,...data});
-  const response = await fetch('game_api.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body,credentials:'same-origin',cache:'no-store'});
-  let json;
-  try { json=await response.json(); } catch { throw new Error('서버 응답을 읽지 못했습니다. 새로고침 후 다시 시도해 주세요.'); }
-  if (!response.ok || !json.ok) throw new Error(json.error || '요청을 처리하지 못했습니다.');
-  if (json.csrf) csrf=json.csrf;
-  return json;
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const flags={korea:'🇰🇷',japan:'🇯🇵',china:'🇨🇳',mongolia:'🇲🇳'};
+const names={korea:'한국',japan:'일본',china:'중국',mongolia:'몽골'};
+const colors={korea:'#326ba5',japan:'#a34d4d',china:'#b18a3e',mongolia:'#3d876b',neutral:'#344454'};
+const music={korea:'music/korea.mp3',japan:'music/japan.mp3',china:'music/china.mp3',mongolia:'music/mongolia.mp3'};
+/* Schematic region map: selectable regions, adjacency is enforced by the server. */
+const shapes=[
+['far_east','극동',80,80,'korea'],['mongolia_n','북몽골',230,80,'mongolia'],['manchuria','만주',380,80,'china'],['hokkaido','홋카이도',680,80,'japan'],
+['mongolia_s','남몽골',230,200,'mongolia'],['north_china','화북',380,200,'china'],['korea_n','북한',520,200,'korea'],['honshu','혼슈',680,200,'japan'],
+['west_china','서중국',230,320,'china'],['east_china','화동',380,320,'china'],['korea_s','남한',520,320,'korea'],['kyushu','규슈',680,320,'japan'],
+['south_china','화남',380,440,'china'],['taiwan','대만',520,440,'china']];
+let country='korea',code='',csrf='',myId='',room=null,selected='korea_s',poll=null,busy=false,ready=false;
+function toast(msg,err=false){$('toast').textContent=msg;$('toast').classList.remove('hidden');$('toast').style.borderColor=err?'#a54b5b':'#37654f';setTimeout(()=> $('toast').classList.add('hidden'),4200)}
+async function api(action,data={}){const res=await fetch('game_api.php',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:new URLSearchParams({action,csrf,...data})});let j;try{j=await res.json()}catch{throw Error('서버 응답을 읽을 수 없습니다.')}if(!res.ok||!j.ok)throw Error(j.error||'요청 실패');if(j.csrf)csrf=j.csrf;return j}
+async function run(action,data={}){if(busy)return null;busy=true;try{return await api(action,data)}catch(e){toast(e.message,true);return null}finally{busy=false}}
+function paintProfile(p){if(!p)return;$('profileName').textContent=p.nickname||p.username||'지휘관';$('profileLevel').textContent='LV. '+p.level;$('profileXp').textContent=(p.xp||0)+' XP · 승리 '+(p.wins||0)}
+function pick(c){country=c;document.querySelectorAll('.country').forEach(e=>e.classList.toggle('selected',e.dataset.country===c));$('myCountry').textContent=flags[c]+' '+names[c];$('bgm').src=music[c];if(!$('bgm').paused)$('bgm').play().catch(()=>{})}
+function polygon(x,y){return `${x},${y-48} ${x+62},${y-24} ${x+62},${y+24} ${x},${y+48} ${x-62},${y+24} ${x-62},${y-24}`}
+function drawMap(r){const svg=$('map');svg.innerHTML='';const ns='http://www.w3.org/2000/svg';
+const water=document.createElementNS(ns,'rect');water.setAttribute('width','820');water.setAttribute('height','535');water.setAttribute('fill','#10293a');svg.append(water);
+for(let x=20;x<820;x+=40){const l=document.createElementNS(ns,'path');l.setAttribute('d',`M${x} 0 V535`);l.setAttribute('stroke','#8fc3d0');l.setAttribute('stroke-opacity','.045');svg.append(l)}
+for(let y=20;y<535;y+=40){const l=document.createElementNS(ns,'path');l.setAttribute('d',`M0 ${y} H820`);l.setAttribute('stroke','#8fc3d0');l.setAttribute('stroke-opacity','.045');svg.append(l)}
+(r.territories||[]).forEach(t=>{const d=shapes.find(s=>s[0]===t.id);if(!d)return;const poly=document.createElementNS(ns,'polygon');poly.setAttribute('points',polygon(d[2],d[3]));poly.setAttribute('class','region'+(selected===t.id?' selected':''));poly.setAttribute('fill',t.owner_id?(colors[(r.players.find(p=>p.id===t.owner_id)||{}).country]||colors.neutral):colors.neutral);poly.addEventListener('click',()=>{selected=t.id;drawMap(r);showRegion(t)});svg.append(poly);
+const label=document.createElementNS(ns,'text');label.setAttribute('x',d[2]);label.setAttribute('y',d[3]-3);label.setAttribute('class','region-label');label.textContent=t.name;svg.append(label);
+const troops=document.createElementNS(ns,'text');troops.setAttribute('x',d[2]);troops.setAttribute('y',d[3]+17);troops.setAttribute('class','region-troops');troops.textContent=(t.owner_flag||'⚪')+' '+(t.troops||0)+'명';svg.append(troops);
+});}
+function showRegion(t){const own=t.owner_name?`${t.owner_flag} ${t.owner_name}`:'중립';$('regionInfo').innerHTML='';const b=document.createElement('b');b.textContent=t.name+' · '+own;const p=document.createElement('p');p.className='muted';p.textContent=`병력 ${t.troops||0}명 · 생산 식량 ${t.yield?.food||0}/분 · 금속 ${t.yield?.metal||0}/분`; $('regionInfo').append(b,p);$('attackBtn').disabled=!room||room.status!=='playing'||t.owner_id===myId}
+function render(r){room=r;
+if((r.map_version||1)!==2){
+  $('lobby').classList.add('hidden');$('roomPanel').classList.add('hidden');$('war').classList.remove('hidden');
+  $('map').innerHTML='<text x="410" y="220" fill="#fff" font-size="20" text-anchor="middle">이전 버전 전투가 정리되는 중입니다</text><text x="410" y="255" fill="#a9c2d8" font-size="13" text-anchor="middle">기존 데이터는 보존했습니다. 이 방이 종료되면 새 전쟁을 만들어 주세요.</text>';
+  $('regionInfo').textContent='이전 버전 방 코드: '+r.code+' · 상태: '+r.status;
+  $('attackBtn').disabled=true;$('recruitBtn').disabled=true;
+  $('timer').textContent=r.status==='finished'?'이전 전투 종료':'이전 전투 정리 중';
+  return;
 }
-function rank(level){if(level>=36)return '대전략가';if(level>=21)return '정복자';if(level>=11)return '전략가';if(level>=6)return '지휘관';return '신병';}
-function paintProfile(p){
-  if(!p)return;
-  $('profileName').textContent=p.nickname||p.username||'지휘관';
-  $('profileLevel').textContent=`LV. ${p.level} · ${rank(p.level)}`;
-  $('rankBadge').textContent=rank(p.level);
-  $('xpText').textContent=`${p.xp} XP`;
-  $('nextXp').textContent=`다음 레벨까지 ${p.next_level_xp-p.level_xp} XP`;
-  $('xpBar').style.width=`${Math.max(0,Math.min(100,p.level_xp/Math.max(1,p.next_level_xp-p.level*0)*100))}%`;
-  $('winsText').textContent=p.wins||0;$('capturesText').textContent=p.captures||0;$('gamesText').textContent=p.games||0;
+$('lobby').classList.add('hidden');$('roomPanel').classList.toggle('hidden',r.status!=='waiting');$('war').classList.toggle('hidden',r.status==='waiting');$('roomCode').textContent=r.code;
+if(r.status==='waiting'){ $('roomPlayers').innerHTML='';r.players.forEach(p=>{const d=document.createElement('div');d.className='selected-info';d.textContent=`${flags[p.country]} ${p.nickname} · LV.${p.level} · ${p.ready?'준비 완료':'준비 중'}`;$('roomPlayers').append(d)});$('startBtn').disabled=r.players.length<2||r.players.some(p=>!p.ready)||r.host_id!==myId;return}
+const me=r.players.find(p=>p.id===myId);$('myCountry').textContent=me?flags[me.country]+' '+names[me.country]:'지휘관';const eco=r.economy?.[myId]||{food:0,metal:0};$('food').textContent=eco.food||0;$('metal').textContent=eco.metal||0;
+let owned=0,army=0;(r.territories||[]).forEach(t=>{if(t.owner_id===myId){owned++;army+=Number(t.troops||0)}});$('owned').textContent=owned;$('army').textContent=army;
+$('timer').textContent=r.status==='finished'?'전쟁 종료':Math.max(0,Math.ceil((r.ends_at-Date.now()/1000))).toString()+'초 남음';
+$('players').innerHTML='';r.players.forEach(p=>{const d=document.createElement('div');d.className='selected-info';let count=0,units=0;r.territories.forEach(t=>{if(t.owner_id===p.id){count++;units+=Number(t.troops||0)}});d.textContent=`${flags[p.country]} ${p.nickname} · 지역 ${count} · 병력 ${units}`;$('players').append(d)});
+$('logs').innerHTML='';(r.log||[]).slice(-15).reverse().forEach(s=>{const p=document.createElement('p');p.textContent=s;$('logs').append(p)});drawMap(r);const t=r.territories.find(t=>t.id===selected);if(t)showRegion(t);
+$('attackBtn').disabled=r.status!=='playing';$('recruitBtn').disabled=r.status!=='playing';if(r.status==='finished')toast('전쟁 종료 · 승리: '+(r.winner_name||'미정'));
 }
-function selectCountry(country){
-  selectedCountry=country;
-  document.querySelectorAll('.country').forEach(el=>el.classList.toggle('selected',el.dataset.country===country));
-  $('musicName').textContent=names[country];
-  $('bgm').src=music[country];
-  if(!$('bgm').paused){$('bgm').play().catch(()=>{});}
-}
-async function run(action,data={}){
-  if(busy)return;busy=true;
-  try{return await api(action,data);}catch(e){showToast(e.message,true);}finally{busy=false;}
-}
-async function refreshRoom(){
-  if(!roomCode)return;
-  const result=await run('state',{room:roomCode});
-  if(!result)return;
-  if(result.profile)paintProfile(result.profile);
-  gameState=result.room;
-  if(!gameState){roomCode='';stopPolling();$('roomPanel').style.display='none';$('gameArea').classList.remove('active');$('lobbyArea').classList.remove('hidden');showToast('전투실이 종료되었습니다.');return;}
-  renderRoom(gameState);
-  if(gameState.status==='playing'){renderGame(gameState);$('roomPanel').style.display='none';$('lobbyArea').classList.add('hidden');$('gameArea').classList.add('active');}
-  else if(gameState.status==='finished'){renderGame(gameState);$('gameArea').classList.add('active');$('roomPanel').style.display='none';$('lobbyArea').classList.add('hidden');}
-}
-function renderRoom(room){
-  $('roomPanel').style.display='block';$('roomCode').textContent=room.code;
-  $('roomStatus').textContent=room.status==='waiting'?'지휘관 모집 중':'전투 진행 중';
-  $('startBtn').style.display=room.host_id===window.currentMemberId?'inline-block':'none';
-  $('startBtn').disabled=room.players.length<2 || room.players.some(p=>!p.ready);
-  $('roomPlayers').innerHTML='';
-  room.players.forEach(p=>{
-    const row=document.createElement('div');row.className='player';
-    const flag=document.createElement('div');flag.className='pflag';flag.textContent=flags[p.country]||'🛡️';
-    const main=document.createElement('div');main.className='player-main';
-    const strong=document.createElement('strong');strong.textContent=p.nickname;
-    const small=document.createElement('small');small.textContent=`LV. ${p.level} · ${rank(p.level)}`;
-    main.append(strong,small);
-    const badge=document.createElement('span');badge.className='level';badge.textContent=p.ready?'준비 완료':'준비 중';
-    row.append(flag,main,badge);$('roomPlayers').append(row);
-  });
-}
-function renderGame(room){
-  const secs=Math.max(0,Math.ceil((room.ends_at-Date.now())/1000));
-  $('gameTimer').textContent=room.status==='finished'?'전투 종료':`${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')} 남음`;
-  $('gameHeadline').textContent=room.status==='finished'?'전투 종료': '동아시아 패권전 진행 중';
-  $('gameHint').textContent=room.status==='finished'?(room.winner_name?`${room.winner_name} 지휘관이 승리했습니다.`:'전투가 종료되었습니다.'):'영토를 점령해 점수를 확보하세요. 점령 시도에는 1회당 1초의 재사용 대기시간이 있습니다.';
-  $('captureBtn').disabled=room.status!=='playing';
-  $('territories').innerHTML='';
-  (room.territories||[]).forEach(t=>{
-    const el=document.createElement('div');el.className='territory'+(t.owner_id===window.currentMemberId?' mine':'');
-    const title=document.createElement('strong');title.textContent=t.name;
-    const count=document.createElement('div');count.className='count';count.textContent=t.score;
-    const owner=document.createElement('small');owner.textContent=t.owner_name?`${t.owner_flag} ${t.owner_name}`:'중립 영토';
-    el.append(title,count,owner);$('territories').append(el);
-  });
-  $('gameLog').innerHTML='';
-  (room.log||[]).slice(-12).reverse().forEach(line=>{const p=document.createElement('p');p.textContent=line;$('gameLog').append(p);});
-  if(room.status==='finished' && room.result_awarded){$('captureBtn').disabled=true;}
-}
-async function createRoom(){
-  const r=await run('create',{country:selectedCountry});if(!r)return;
-  roomCode=r.room.code;isHost=true;ready=false;$('roomInput').value=roomCode;showToast('전투실을 만들었습니다. 친구에게 방 코드를 공유하세요.');await refreshRoom();startPolling();
-}
-async function joinRoom(code){
-  const r=await run('join',{room:code,country:selectedCountry});if(!r)return;
-  roomCode=r.room.code;ready=false;showToast('전투실에 참가했습니다.');await refreshRoom();startPolling();
-}
-function startPolling(){stopPolling();poller=setInterval(refreshRoom,2500);}
-function stopPolling(){if(poller){clearInterval(poller);poller=null;}}
-document.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>selectCountry(b.dataset.pick)));
-$('createBtn').addEventListener('click',createRoom);
-$('joinBtn').addEventListener('click',()=>{const code=$('roomInput').value.trim().toUpperCase();if(!code){showToast('참가할 방 코드를 입력해 주세요.',true);return;}joinRoom(code);});
-$('quickBtn').addEventListener('click',async()=>{const r=await run('quick_join',{country:selectedCountry});if(r){roomCode=r.room.code;showToast('참가 가능한 전투실을 찾았습니다.');await refreshRoom();startPolling();}});
-$('readyBtn').addEventListener('click',async()=>{const r=await run('ready',{room:roomCode,ready:ready?'0':'1'});if(r){ready=!ready;await refreshRoom();}});
-$('startBtn').addEventListener('click',async()=>{const r=await run('start',{room:roomCode});if(r){showToast('전투 시작!');await refreshRoom();}});
-$('leaveBtn').addEventListener('click',async()=>{await run('leave',{room:roomCode});roomCode='';stopPolling();$('roomPanel').style.display='none';$('lobbyArea').classList.remove('hidden');showToast('전투실에서 나왔습니다.');});
-$('copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(roomCode);showToast('방 코드를 복사했습니다.');}catch{showToast(`방 코드: ${roomCode}`);}});
-$('captureBtn').addEventListener('click',async()=>{const r=await run('capture',{room:roomCode,country:selectedCountry});if(r){if(r.profile)paintProfile(r.profile);await refreshRoom();}});
-$('endBtn').addEventListener('click',refreshRoom);
-$('exitGameBtn').addEventListener('click',async()=>{await run('leave',{room:roomCode});roomCode='';stopPolling();$('gameArea').classList.remove('active');$('lobbyArea').classList.remove('hidden');showToast('전투실에서 나왔습니다.');});
-$('volume').value=localStorage.getItem('strategyBgmVolume')||'35';
-$('volumeText').textContent=$('volume').value+'%';
-$('bgm').volume=Number($('volume').value)/100;
-$('volume').addEventListener('input',()=>{const v=$('volume').value;$('bgm').volume=Number(v)/100;$('volumeText').textContent=v+'%';localStorage.setItem('strategyBgmVolume',v);});
-$('musicToggle').addEventListener('click',async()=>{const audio=$('bgm');if(audio.paused){try{await audio.play();$('musicToggle').textContent='Ⅱ 일시정지';}catch{showToast('브라우저에서 재생을 허용한 뒤 다시 눌러 주세요.',true);}}else{audio.pause();$('musicToggle').textContent='▶ 재생';}});
-$('bgm').addEventListener('pause',()=>{$('musicToggle').textContent='▶ 재생';});
-$('bgm').addEventListener('play',()=>{$('musicToggle').textContent='Ⅱ 일시정지';});
-window.addEventListener('beforeunload',stopPolling);
-(async()=>{
-  try{
-    const tokenResponse=await fetch('game_api.php?bootstrap=1',{credentials:'same-origin',cache:'no-store'});
-    const tokenData=await tokenResponse.json();
-    if(!tokenResponse.ok||!tokenData.ok)throw new Error(tokenData.error||'회원 로그인이 필요합니다.');
-    csrf=tokenData.csrf;
-    const r=await api('bootstrap');window.currentMemberId=r.member.id;paintProfile(r.profile);
-    selectCountry('korea');
-    if(r.active_room){roomCode=r.active_room;await refreshRoom();startPolling();}
-  }catch(e){document.querySelector('.wrap').innerHTML=`<section class="panel" style="padding:28px;margin-top:12vh"><h1>회원 로그인이 필요합니다</h1><p>${String(e.message).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}</p><a href="login.php">회원 로그인으로 이동</a> · <a href="index.php">메인 메뉴</a></section>`;}
+async function refresh(){if(!code)return;const j=await run('state',{room:code});if(!j)return;if(j.profile)paintProfile(j.profile);if(!j.room){code='';clearInterval(poll);$('war').classList.add('hidden');$('roomPanel').classList.add('hidden');$('lobby').classList.remove('hidden');return}render(j.room)}
+async function create(){const j=await run('create',{country});if(j){code=j.room.code;$('roomInput').value=code;render(j.room);startPoll();toast('전쟁실 생성 완료. 방 코드를 공유하세요.');}}
+async function join(c){const j=await run('join',{room:c,country});if(j){code=j.room.code;render(j.room);startPoll();}}
+function startPoll(){clearInterval(poll);poll=setInterval(refresh,1800)}
+document.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>pick(b.dataset.pick)));
+$('createBtn').onclick=create;$('joinBtn').onclick=()=>{const c=$('roomInput').value.trim().toUpperCase();if(c)join(c);else toast('방 코드를 입력해 주세요.',true)};
+$('quickBtn').onclick=async()=>{const j=await run('quick_join',{country});if(j){code=j.room.code;render(j.room);startPoll()}};
+$('readyBtn').onclick=async()=>{if(!room)return;const me=room.players.find(p=>p.id===myId);const j=await run('ready',{room:code,ready:me&&!me.ready?'1':'0'});if(j)render(j.room)};
+$('startBtn').onclick=async()=>{const j=await run('start',{room:code});if(j){render(j.room);startPoll()}};
+$('leaveBtn').onclick=async()=>{const j=await run('leave',{room:code});if(j){code='';clearInterval(poll);$('roomPanel').classList.add('hidden');$('lobby').classList.remove('hidden')}};
+$('copyBtn').onclick=()=>navigator.clipboard?.writeText(code).then(()=>toast('방 코드 복사 완료')).catch(()=>toast('방 코드: '+code));
+$('refreshBtn').onclick=refresh;
+$('recruitBtn').onclick=async()=>{const j=await run('recruit',{room:code,amount:10});if(j){paintProfile(j.profile);render(j.room)}};
+$('attackBtn').onclick=async()=>{const from=room?.territories.find(t=>t.owner_id===myId&&t.neighbors.includes(selected));if(!from){toast('먼저 인접한 내 지역을 선택해 주세요. 지도를 눌러 공격 대상을 선택할 수 있습니다.',true);return}const n=Math.max(5,Number($('attackCount').value)||5);const j=await run('attack',{room:code,from:from.id,to:selected,troops:n});if(j){paintProfile(j.profile);render(j.room)}};
+$('volume').value=localStorage.getItem('strategyBgmVolume')||'35';$('volumeText').textContent=$('volume').value+'%';$('bgm').volume=Number($('volume').value)/100;$('volume').addEventListener('input',()=>{const v=$('volume').value;$('bgm').volume=v/100;$('volumeText').textContent=v+'%';localStorage.setItem('strategyBgmVolume',v)});
+$('musicToggle').onclick=async()=>{const a=$('bgm');if(a.paused){try{await a.play();$('musicToggle').textContent='Ⅱ 정지'}catch{toast('먼저 국가를 선택한 뒤 다시 눌러 주세요.',true)}}else{a.pause();$('musicToggle').textContent='▶ BGM'}};
+(async()=>{try{const boot=await fetch('game_api.php?bootstrap=1',{credentials:'same-origin',cache:'no-store'});const b=await boot.json();if(!boot.ok||!b.ok)throw Error(b.error||'로그인이 필요합니다');csrf=b.csrf;const j=await api('bootstrap');csrf=j.csrf;myId=j.member.id;paintProfile(j.profile);pick('korea');if(j.active_room){code=j.active_room;await refresh();startPoll()}}catch(e){document.querySelector('.wrap').innerHTML='<section class="panel" style="padding:25px"><h1>회원 로그인이 필요합니다</h1><p>'+String(e.message).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</p><a href="login.php">회원 로그인</a></section>'}})();
 })();
-})();
-</script>
-</body>
-</html>
+</script></body></html>
