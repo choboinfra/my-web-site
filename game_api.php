@@ -94,6 +94,19 @@ function tick_economy(array &$r): void {
     }
     $r['last_tick']=$now;
 }
+function game_decided(array $r): bool {
+    if (($r['status'] ?? '') !== 'playing') return false;
+    $active = array_values(array_filter($r['players'] ?? [], fn($p) => empty($p['surrendered'])));
+    if (count($active) <= 1) return count($r['players'] ?? []) >= 2;
+    if (($r['mode'] ?? 'free') === 'team') {
+        $teams = [];
+        foreach ($active as $p) $teams[(string)($p['team_id'] ?? '')] = true;
+        return count($teams) <= 1 && count($r['players'] ?? []) >= 2;
+    }
+    return false;
+}
+function team_label(string $team): string { return $team === 'red' ? '적색팀' : '청색팀'; }
+
 function tick_armies(array &$s, array &$r): void {
     if (($r['status'] ?? '') !== 'playing') return;
     if (!isset($r['armies']) || !is_array($r['armies'])) $r['armies'] = [];
@@ -106,6 +119,11 @@ function tick_armies(array &$s, array &$r): void {
         if ($fi===null || $ti===null) continue;
         $src=&$r['territories'][$fi]; $dst=&$r['territories'][$ti]; $sender=(string)$a['owner_id']; $troops=(int)$a['troops'];
         if (($dst['owner_id']??null)===$sender) { $dst['troops']=(int)($dst['troops']??0)+$troops; logline($r,'증원 병력이 '.$dst['name'].'에 도착했습니다.'); unset($src,$dst); continue; }
+        if (($r['mode']??'free')==='team' && !empty($dst['owner_id'])) {
+            $senderTeam=null;$targetTeam=null;
+            foreach($r['players'] as $pl){if((string)$pl['id']===$sender)$senderTeam=(string)($pl['team_id']??'');if((string)$pl['id']===(string)$dst['owner_id'])$targetTeam=(string)($pl['team_id']??'');}
+            if($senderTeam!==null && $senderTeam!=='' && $senderTeam===$targetTeam){$dst['troops']=(int)($dst['troops']??0)+$troops;logline($r,($a['nickname']??'아군').'의 지원 병력이 아군 '.$dst['name'].'에 합류했습니다.');unset($src,$dst);continue;}
+        }
         $def=(int)($dst['troops']??0); $power=$troops*random_int(88,112)/100; $defPower=max(1,$def)*random_int(88,112)/100;
         if ($power>$defPower) {
             $oldOwner=$dst['owner_id']??null; $dst['owner_id']=$sender; $dst['troops']=max(1,(int)floor($troops-$def*.55));
@@ -117,8 +135,7 @@ function tick_armies(array &$s, array &$r): void {
         unset($src,$dst);
     }
     $r['armies']=$remaining;
-    $active=array_values(array_filter($r['players'],fn($p)=>empty($p['surrendered'])));
-    if (count($active)<=1 && count($r['players'])>=2 && ($r['status']??'')==='playing') finish_game($s,$r);
+    if (game_decided($r)) finish_game($s,$r);
 }
 function surrender_player(array &$s, array &$r, string $id, string $reason='항복'): void {
     foreach ($r['players'] as &$p) if (($p['id']??'')===$id) { $p['surrendered']=true; $p['ready']=false; $name=$p['nickname']??'지휘관'; } unset($p);
@@ -126,28 +143,37 @@ function surrender_player(array &$s, array &$r, string $id, string $reason='항�
     unset($r['economy'][$id]);
     $r['armies']=array_values(array_filter($r['armies']??[],fn($a)=>($a['owner_id']??'')!==$id));
     logline($r,($name??'지휘관').'이(가) '.$reason.'했습니다.');
-    $active=array_values(array_filter($r['players'],fn($p)=>empty($p['surrendered'])));
-    if (count($active)<=1 && count($r['players'])>=2 && ($r['status']??'')==='playing') finish_game($s,$r);
+    if (game_decided($r)) finish_game($s,$r);
 }
 function finish_game(array &$s,array &$r): void {
     if(($r['status']??'')!=='playing'||!empty($r['result_awarded']))return;
-    $scores=[];foreach($r['players'] as $p)if(empty($p['surrendered']))$scores[$p['id']]=0;if(!$scores){$r['status']='finished';$r['winner_id']=null;$r['winner_name']='무승부';$r['result_awarded']=true;return;}
-    foreach($r['territories'] as $t)if(isset($scores[$t['owner_id']??'']))$scores[$t['owner_id']]++;
-    arsort($scores);$winnerId=array_key_first($scores);$winnerName='지휘관';
-    foreach($r['players'] as $p)if($p['id']===$winnerId)$winnerName=$p['nickname'];
-    foreach($r['players'] as $p){$id=$p['id'];if(!isset($s['profiles'][$id]))$s['profiles'][$id]=['xp'=>0,'wins'=>0,'captures'=>0,'games'=>0];
-      $s['profiles'][$id]['xp']=(int)($s['profiles'][$id]['xp']??0)+50+($id===$winnerId?50:0);
-      $s['profiles'][$id]['games']=(int)($s['profiles'][$id]['games']??0)+1;if($id===$winnerId)$s['profiles'][$id]['wins']=(int)($s['profiles'][$id]['wins']??0)+1;}
+    $teamMode = (($r['mode'] ?? 'free') === 'team');
+    $scores=[];
+    foreach($r['players'] as $p) if(empty($p['surrendered'])) $scores[$teamMode ? (string)($p['team_id'] ?? 'blue') : (string)$p['id']] = 0;
+    if(!$scores){$r['status']='finished';$r['winner_id']=null;$r['winner_name']='무승부';$r['result_awarded']=true;return;}
+    foreach($r['territories'] as $t){
+        $owner=(string)($t['owner_id']??'');
+        if($owner==='')continue;
+        if($teamMode){foreach($r['players'] as $p)if((string)$p['id']===$owner&&array_key_exists((string)($p['team_id']??'blue'),$scores)){$scores[(string)($p['team_id']??'blue')]++;break;}}
+        elseif(isset($scores[$owner]))$scores[$owner]++;
+    }
+    arsort($scores);$winnerSide=array_key_first($scores);$winnerId=null;$winnerName='지휘관';
+    if($teamMode){$winnerName=team_label((string)$winnerSide);foreach($r['players'] as $p)if(empty($p['surrendered'])&&(string)($p['team_id']??'blue')===(string)$winnerSide){$winnerId=$p['id'];break;}}
+    else{$winnerId=(string)$winnerSide;foreach($r['players'] as $p)if((string)$p['id']===$winnerId)$winnerName=$p['nickname']??'지휘관';}
+    foreach($r['players'] as $p){$id=(string)$p['id'];if(!isset($s['profiles'][$id]))$s['profiles'][$id]=['xp'=>0,'wins'=>0,'captures'=>0,'games'=>0];
+      $won=$teamMode ? (empty($p['surrendered'])&&(string)($p['team_id']??'blue')===(string)$winnerSide) : ($id===(string)$winnerId);
+      $s['profiles'][$id]['xp']=(int)($s['profiles'][$id]['xp']??0)+50+($won?50:0);
+      $s['profiles'][$id]['games']=(int)($s['profiles'][$id]['games']??0)+1;if($won)$s['profiles'][$id]['wins']=(int)($s['profiles'][$id]['wins']??0)+1;}
     $r['status']='finished';$r['winner_id']=$winnerId;$r['winner_name']=$winnerName;$r['result_awarded']=true;logline($r,'전쟁 종료. 승리: '.$winnerName.' (경험치 지급 완료)');
 }
 function public_room(array $r): array {
-    $players=[];foreach($r['players']??[] as $p)$players[]=['id'=>$p['id'],'nickname'=>$p['nickname'],'username'=>$p['username']??'','country'=>$p['country'],'level'=>$p['level']??1,'ready'=>(bool)($p['ready']??false),'surrendered'=>(bool)($p['surrendered']??false)];
+    $players=[];foreach($r['players']??[] as $p)$players[]=['id'=>$p['id'],'nickname'=>$p['nickname'],'username'=>$p['username']??'','country'=>$p['country'],'level'=>$p['level']??1,'ready'=>(bool)($p['ready']??false),'surrendered'=>(bool)($p['surrendered']??false),'team_id'=>$p['team_id']??null];
     $territories=[];foreach($r['territories']??[] as $t){$owner=null;foreach($players as $p)if($p['id']===($t['owner_id']??null))$owner=$p;
       $territories[]=['id'=>$t['id']??null,'name'=>$t['name'],'x'=>$t['x']??0,'y'=>$t['y']??0,'neighbors'=>$t['neighbors']??[],
         'yield'=>$t['yield']??[],'owner_id'=>$t['owner_id']??null,'owner_name'=>$owner['nickname']??null,'owner_flag'=>FLAGS[$owner['country']??'']??'',
         'troops'=>(int)($t['troops']??0)];}
     $eco=[];foreach($players as $p)$eco[$p['id']]=$r['economy'][$p['id']]??['food'=>0,'metal'=>0];
-    return ['code'=>$r['code'],'status'=>$r['status'],'host_id'=>$r['host_id'],'players'=>$players,'territories'=>$territories,
+    return ['code'=>$r['code'],'status'=>$r['status'],'mode'=>$r['mode']??'free','host_id'=>$r['host_id'],'players'=>$players,'territories'=>$territories,
       'log'=>array_values($r['log']??[]),'ends_at'=>(int)($r['ends_at']??0),'winner_name'=>$r['winner_name']??null,
       'result_awarded'=>(bool)($r['result_awarded']??false),'map_version'=>(int)($r['map_version']??1),'economy'=>$eco,'armies'=>array_values($r['armies']??[])];
 }
@@ -165,21 +191,27 @@ try {
     if($action==='create'){
         foreach($s['rooms'] as $r)if(in_array($id,array_column($r['players']??[],'id'),true)&&in_array($r['status']??'', ['waiting','playing'],true))fail('이미 참가 중인 전투실이 있습니다.',409);
         $country=(string)($_POST['country']??'');if(!isset(COUNTRIES[$country]))fail('국가를 선택해 주세요.');
-        $new=['code'=>room_code($s['rooms']),'status'=>'waiting','host_id'=>$id,'created_at'=>time(),'ends_at'=>0,'winner_id'=>null,'winner_name'=>null,'result_awarded'=>false,
-          'players'=>[['id'=>$id,'username'=>$profile['username'],'nickname'=>$profile['nickname'],'country'=>$country,'level'=>$profile['level'],'ready'=>true]],
+        $mode=(string)($_POST['mode']??'free');if(!in_array($mode,['free','team'],true))$mode='free';
+        $team=(string)($_POST['team_id']??'blue');if(!in_array($team,['blue','red'],true))$team='blue';
+        $new=['code'=>room_code($s['rooms']),'mode'=>$mode,'status'=>'waiting','host_id'=>$id,'created_at'=>time(),'ends_at'=>0,'winner_id'=>null,'winner_name'=>null,'result_awarded'=>false,
+          'players'=>[['id'=>$id,'username'=>$profile['username'],'nickname'=>$profile['nickname'],'country'=>$country,'level'=>$profile['level'],'ready'=>true,'team_id'=>$mode==='team'?$team:null]],
           'territories'=>region_templates(),'log'=>[],'map_version'=>2,'armies'=>[],'economy'=>[$id=>['food'=>80,'metal'=>50]],'last_tick'=>time()];
         $s['rooms'][]=$new;$ri=count($s['rooms'])-1;logline($s['rooms'][$ri],$profile['nickname'].' 지휘관이 작전실을 개설했습니다.');write_state($s);
         reply(['ok'=>true,'csrf'=>site_csrf(),'profile'=>$profile,'room'=>public_room($s['rooms'][$ri])]);
     }
     if($action==='join'||$action==='quick_join'){
         $country=(string)($_POST['country']??'');if(!isset(COUNTRIES[$country]))fail('국가를 선택해 주세요.');
-        if($action==='quick_join'){$ri=null;foreach($s['rooms'] as $i=>$r)if(($r['status']??'')==='waiting'&&count($r['players']??[])<4&&((int)($r['map_version']??1)===2)){$ri=$i;break;}}
-        if($ri===null)fail($action==='quick_join'?'참가 가능한 새 지도 전투실이 없습니다. 새 전투실을 만들어 주세요.':'전투실 코드를 찾을 수 없습니다.',404);
+        $requestedMode=(string)($_POST['mode']??'free');if(!in_array($requestedMode,['free','team'],true))$requestedMode='free';
+        $requestedTeam=(string)($_POST['team_id']??'blue');if(!in_array($requestedTeam,['blue','red'],true))$requestedTeam='blue';
+        if($action==='quick_join'){$ri=null;foreach($s['rooms'] as $i=>$r)if(($r['status']??'')==='waiting'&&count($r['players']??[])<4&&((int)($r['map_version']??1)===2)&&(($r['mode']??'free')===$requestedMode)){$ri=$i;break;}}
+        if($ri===null)fail($action==='quick_join'?'선택한 모드에서 참가 가능한 대기실이 없습니다. 새 전투실을 만들어 주세요.':'전투실 코드를 찾을 수 없습니다.',404);
         $r=&$s['rooms'][$ri];if(($r['status']??'')!=='waiting')fail('이미 시작된 전투입니다.',409);
         if(count($r['players'])>=4)fail('전투실이 가득 찼습니다.',409);
         foreach($s['rooms'] as $other)if(in_array($id,array_column($other['players']??[],'id'),true)&&in_array($other['status']??'', ['waiting','playing'],true))fail('이미 참가 중인 전투실이 있습니다.',409);
         foreach($r['players'] as $p)if($p['country']===$country)fail('해당 국가는 이미 선택되었습니다.',409);
-        $r['players'][]=['id'=>$id,'username'=>$profile['username'],'nickname'=>$profile['nickname'],'country'=>$country,'level'=>$profile['level'],'ready'=>false];
+        $mode=(string)($r['mode']??'free');$teamId=null;
+        if($mode==='team'){$teamId=$requestedTeam;$teamCount=0;foreach($r['players'] as $p)if((string)($p['team_id']??'blue')===$teamId)$teamCount++;if($teamCount>=2)fail('해당 팀은 이미 2명으로 가득 찼습니다.',409);}
+        $r['players'][]=['id'=>$id,'username'=>$profile['username'],'nickname'=>$profile['nickname'],'country'=>$country,'level'=>$profile['level'],'ready'=>false,'team_id'=>$teamId];
         $r['economy'][$id]=['food'=>80,'metal'=>50];logline($r,$profile['nickname'].' 지휘관이 참가했습니다.');write_state($s);
         reply(['ok'=>true,'csrf'=>site_csrf(),'profile'=>$profile,'room'=>public_room($r)]);
     }
@@ -193,6 +225,7 @@ try {
         if($r['host_id']!==$id)fail('방장만 시작할 수 있습니다.',403);
         if(count($r['players'])<2)fail('최소 2명이 참가해야 합니다.',409);
         foreach($r['players'] as $p)if(empty($p['ready']))fail('모든 참가자가 준비 완료해야 합니다.',409);
+        if(($r['mode']??'free')==='team'){$teams=[];foreach($r['players'] as $p)$teams[(string)($p['team_id']??'blue')]=true;if(count($teams)<2)fail('팀전은 청색팀과 적색팀에 각각 1명 이상 필요합니다.',409);}
         if((int)($r['map_version']??1)!==2)fail('이 방은 이전 버전의 전투입니다. 기존 전투를 종료한 뒤 새 방을 만들어 주세요.',409);
         $r['status']='playing';$r['started_at']=time();$r['ends_at']=time()+900;$r['last_tick']=time();
         $startRegion=['korea'=>'korea_s','japan'=>'honshu','china'=>'east_china','mongolia'=>'mongolia_s'];
@@ -217,6 +250,7 @@ try {
         if(($src['owner_id']??null)!==$id)fail('자신이 보유한 지역에서만 공격할 수 있습니다.',403);
         if(!in_array($to,$src['neighbors']??[],true))fail('인접한 지역만 공격할 수 있습니다.',409);
         if(($dst['owner_id']??null)===$id)fail('이미 보유한 지역입니다.',409);
+        if(($r['mode']??'free')==='team' && !empty($dst['owner_id'])){foreach($r['players'] as $ally){if((string)$ally['id']===(string)$dst['owner_id'] && (string)($ally['team_id']??'')===(string)($r['players'][$pi]['team_id']??''))fail('팀전에서는 아군 지역을 공격할 수 없습니다.',409);}}
         $send=max(1,min((int)($_POST['troops']??10),(int)($src['troops']??0)-1));
         if($send<5)fail('공격하려면 출발 지역에 최소 6명 이상의 병력이 필요합니다.',409);
         $src['troops']-=$send;unset($src,$dst);
