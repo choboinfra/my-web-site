@@ -26,14 +26,14 @@ button,input{font:inherit}button{border:1px solid #466b8b;border-radius:9px;padd
 <div class="panel"><div class="head"><h2>동아시아 전선 지도</h2><span id="timer" class="level">전쟁 대기</span></div><div class="body">
 <div class="map-wrap"><div class="map-head"><b>작전 지도 · 지역을 선택하세요</b><div class="map-legend"><span><i class="dot" style="background:#326ba5"></i>한국</span><span><i class="dot" style="background:#a34d4d"></i>일본</span><span><i class="dot" style="background:#b18a3e"></i>중국</span><span><i class="dot" style="background:#3d876b"></i>몽골</span><span><i class="dot" style="background:#344454"></i>중립</span></div></div><div class="map-scroll"><svg id="map" class="map-svg" viewBox="0 0 820 535" role="img" aria-label="동아시아 전략 지도"></svg></div></div>
 <div class="selected-info" id="regionInfo">지역을 선택하면 병력과 공격 정보를 볼 수 있습니다.</div>
-<div class="actions"><label class="muted">공격 병력 <input id="attackCount" type="number" min="5" max="200" value="15" style="width:80px;background:#08111b;color:white;border:1px solid #344b61;border-radius:7px;padding:6px"></label><button id="attackBtn">⚔ 선택 지역 공격</button><button id="recruitBtn" class="gold">＋ 병력 10명 모집</button><button id="refreshBtn" class="secondary">현황 갱신</button></div>
-<p class="note">인접 지역만 공격할 수 있습니다. 공격에는 출발 지역 병력이 필요하며, 전투 결과는 서버에서 판정됩니다.</p></div></div>
+<div class="actions"><label class="muted">공격 병력 <input id="attackCount" type="number" min="5" max="200" value="15" style="width:80px;background:#08111b;color:white;border:1px solid #344b61;border-radius:7px;padding:6px"></label><button id="attackBtn">⚔ 선택 지역 공격</button><button id="recruitBtn" class="gold">＋ 병력 10명 모집</button><button id="refreshBtn" class="secondary">현황 갱신</button><button id="surrenderBtn" class="danger">🏳 항복</button></div>
+<p class="note">인접 지역을 공격하면 병력이 지도 위를 이동합니다. 도착 후 서버가 전투와 점령을 판정합니다. 전황은 약 0.9초마다 동기화됩니다.</p></div></div>
 <aside class="panel"><div class="head"><h2>국가 운영</h2><span id="myCountry" class="level">🇰🇷 한국</span></div><div class="body">
 <div class="stats"><div class="stat"><small>식량</small><strong id="food">80</strong></div><div class="stat"><small>금속</small><strong id="metal">50</strong></div><div class="stat"><small>보유 지역</small><strong id="owned">0</strong></div><div class="stat"><small>총 병력</small><strong id="army">0</strong></div></div>
 <h3 style="font-size:13px">지휘관</h3><div id="players"></div><h3 style="font-size:13px;margin-top:18px">전쟁 기록</h3><div class="log" id="logs"></div>
 <div class="music"><button id="musicToggle" class="secondary">▶ BGM</button><input id="volume" type="range" min="0" max="100" value="35"><span id="volumeText" class="muted">35%</span></div><div class="muted">선택한 국가의 BGM · 볼륨은 이 브라우저에 저장</div><audio id="bgm" loop preload="none"></audio>
 </div></aside></section>
-<a class="back" href="index.php">← 메인 메뉴로 돌아가기</a><div class="footer"><span>STRATEGY SIMULATION · MAP WARFARE BUILD 0.2</span><span>PHP API · SHARED NFS STATE</span></div></div>
+<a class="back" href="index.php">← 메인 메뉴로 돌아가기</a><div class="footer"><span>STRATEGY SIMULATION · LIVE FRONT BUILD 0.3</span><span>PHP API · SHARED NFS STATE</span></div></div>
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
@@ -61,7 +61,10 @@ for(let y=20;y<535;y+=40){const l=document.createElementNS(ns,'path');l.setAttri
 (r.territories||[]).forEach(t=>{const d=shapes.find(s=>s[0]===t.id);if(!d)return;const poly=document.createElementNS(ns,'polygon');poly.setAttribute('points',polygon(d[2],d[3]));poly.setAttribute('class','region'+(selected===t.id?' selected':''));poly.setAttribute('fill',t.owner_id?(colors[(r.players.find(p=>p.id===t.owner_id)||{}).country]||colors.neutral):colors.neutral);poly.addEventListener('click',()=>{selected=t.id;drawMap(r);showRegion(t)});svg.append(poly);
 const label=document.createElementNS(ns,'text');label.setAttribute('x',d[2]);label.setAttribute('y',d[3]-3);label.setAttribute('class','region-label');label.textContent=t.name;svg.append(label);
 const troops=document.createElementNS(ns,'text');troops.setAttribute('x',d[2]);troops.setAttribute('y',d[3]+17);troops.setAttribute('class','region-troops');troops.textContent=(t.owner_flag||'⚪')+' '+(t.troops||0)+'명';svg.append(troops);
-});}
+});
+/* Draw moving units above the region shapes. */
+(r.armies||[]).forEach(a=>{const f=shapes.find(s=>s[0]===a.from),t=shapes.find(s=>s[0]===a.to);if(!f||!t)return;const elapsed=Math.max(0,Math.min(1,(Date.now()/1000-a.started_at)/Math.max(.1,a.arrives_at-a.started_at)));const x=f[2]+(t[2]-f[2])*elapsed,y=f[3]+(t[3]-f[3])*elapsed;const g=document.createElementNS(ns,'g');const c=document.createElementNS(ns,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r','10');c.setAttribute('fill',colors[(r.players.find(p=>p.id===a.owner_id)||{}).country]||'#fff');c.setAttribute('stroke','#fff');c.setAttribute('stroke-width','2');const tx=document.createElementNS(ns,'text');tx.setAttribute('x',x);tx.setAttribute('y',y+4);tx.setAttribute('text-anchor','middle');tx.setAttribute('font-size','10');tx.setAttribute('fill','#fff');tx.textContent='⚔';g.append(c,tx);svg.append(g)});
+}
 function showRegion(t){const own=t.owner_name?`${t.owner_flag} ${t.owner_name}`:'중립';$('regionInfo').innerHTML='';const b=document.createElement('b');b.textContent=t.name+' · '+own;const p=document.createElement('p');p.className='muted';p.textContent=`병력 ${t.troops||0}명 · 생산 식량 ${t.yield?.food||0}/분 · 금속 ${t.yield?.metal||0}/분`; $('regionInfo').append(b,p);$('attackBtn').disabled=!room||room.status!=='playing'||t.owner_id===myId}
 function render(r){room=r;
 if((r.map_version||1)!==2){
@@ -84,7 +87,7 @@ $('attackBtn').disabled=r.status!=='playing';$('recruitBtn').disabled=r.status!=
 async function refresh(){if(!code)return;const j=await run('state',{room:code});if(!j)return;if(j.profile)paintProfile(j.profile);if(!j.room){code='';clearInterval(poll);$('war').classList.add('hidden');$('roomPanel').classList.add('hidden');$('lobby').classList.remove('hidden');return}render(j.room)}
 async function create(){const j=await run('create',{country});if(j){code=j.room.code;$('roomInput').value=code;render(j.room);startPoll();toast('전쟁실 생성 완료. 방 코드를 공유하세요.');}}
 async function join(c){const j=await run('join',{room:c,country});if(j){code=j.room.code;render(j.room);startPoll();}}
-function startPoll(){clearInterval(poll);poll=setInterval(refresh,1800)}
+function startPoll(){clearInterval(poll);poll=setInterval(refresh,900)}
 document.querySelectorAll('[data-pick]').forEach(b=>b.addEventListener('click',()=>pick(b.dataset.pick)));
 $('createBtn').onclick=create;$('joinBtn').onclick=()=>{const c=$('roomInput').value.trim().toUpperCase();if(c)join(c);else toast('방 코드를 입력해 주세요.',true)};
 $('quickBtn').onclick=async()=>{const j=await run('quick_join',{country});if(j){code=j.room.code;render(j.room);startPoll()}};
@@ -93,6 +96,7 @@ $('startBtn').onclick=async()=>{const j=await run('start',{room:code});if(j){ren
 $('leaveBtn').onclick=async()=>{const j=await run('leave',{room:code});if(j){code='';clearInterval(poll);$('roomPanel').classList.add('hidden');$('lobby').classList.remove('hidden')}};
 $('copyBtn').onclick=()=>navigator.clipboard?.writeText(code).then(()=>toast('방 코드 복사 완료')).catch(()=>toast('방 코드: '+code));
 $('refreshBtn').onclick=refresh;
+$('surrenderBtn').onclick=async()=>{if(!code||!confirm('항복하면 보유 영토와 이동 중인 병력을 잃고 전쟁에서 이탈합니다. 정말 항복할까요?'))return;const j=await run('surrender',{room:code});if(j){render(j.room);toast('항복 처리되었습니다.')}};
 $('recruitBtn').onclick=async()=>{const j=await run('recruit',{room:code,amount:10});if(j){paintProfile(j.profile);render(j.room)}};
 $('attackBtn').onclick=async()=>{const from=room?.territories.find(t=>t.owner_id===myId&&t.neighbors.includes(selected));if(!from){toast('먼저 인접한 내 지역을 선택해 주세요. 지도를 눌러 공격 대상을 선택할 수 있습니다.',true);return}const n=Math.max(5,Number($('attackCount').value)||5);const j=await run('attack',{room:code,from:from.id,to:selected,troops:n});if(j){paintProfile(j.profile);render(j.room)}};
 $('volume').value=localStorage.getItem('strategyBgmVolume')||'35';$('volumeText').textContent=$('volume').value+'%';$('bgm').volume=Number($('volume').value)/100;$('volume').addEventListener('input',()=>{const v=$('volume').value;$('bgm').volume=v/100;$('volumeText').textContent=v+'%';localStorage.setItem('strategyBgmVolume',v)});
