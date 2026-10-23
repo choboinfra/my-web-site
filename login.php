@@ -7,6 +7,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $username = trim((string)($_POST['username'] ?? ''));
         $password = (string)($_POST['password'] ?? '');
+
+        // 별도 관리자 계정 인증: 일반 회원 데이터는 변경하지 않음
+        $adminFile = '/var/lib/site-live/admin_accounts.json';
+        if ($username !== '' && is_readable($adminFile)) {
+            $adminData = json_decode(file_get_contents($adminFile) ?: '', true);
+            foreach (($adminData['users'] ?? []) as $adminUser) {
+                if (
+                    isset($adminUser['username'], $adminUser['password_hash']) &&
+                    strcasecmp((string)$adminUser['username'], $username) === 0 &&
+                    password_verify($password, (string)$adminUser['password_hash'])
+                ) {
+                    session_regenerate_id(true);
+                    $_SESSION['admin_logged_in'] = true;
+                    header('Location: index.php');
+                    exit;
+                }
+            }
+        }
         $found = null;
         foreach (site_member_data()['users'] as $u) {
             if (strcasecmp((string)($u['username'] ?? ''), $username) === 0) {
