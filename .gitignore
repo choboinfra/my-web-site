@@ -20,3 +20,22 @@ entry_gate_backup_*/
 .env.*
 /site-live/
 /file_shares/
+
+# Runtime user uploads and content
+/uploads/
+/board_uploads/
+/dark_path_data.txt
+/guestbook_data.txt
+
+# Historical backups and temporary recovery files
+/backup_*/
+/**/backup_*/
+*.bak*
+*.backup*
+*.broken*
+*.new*
+*.before_*
+*.pre_*
+*.orig
+*.truncated
+*.member_test
